@@ -1,0 +1,13 @@
+fastapi[standard]
+sqlalchemy
+pwdlib[argon2]
+pyjwt
+openai
+sentence-transformers
+rq==1.15.1
+rq-win
+redis
+google-genai
+tenacity
+pypdf
+python-docx

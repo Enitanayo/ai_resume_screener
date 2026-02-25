@@ -1,0 +1,172 @@
+# Resume Screener
+
+An AI-powered resume screening backend that automatically parses resumes, generates embeddings, and scores candidates against job postings using semantic similarity and keyword matching.
+
+## Features
+
+- **Recruiter portal** — post jobs, view ranked candidates, and analytics
+- **Candidate applications** — upload resumes (PDF / DOCX / DOC)
+- **Background processing** — resume parsing and scoring handled asynchronously via Redis Queue
+- **AI-powered parsing** — resume text extracted using Google Gemini (`gemini-1.5-flash`)
+- **Semantic scoring** — embeddings generated with `sentence-transformers` (or OpenAI) and compared via cosine similarity
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| API framework | FastAPI |
+| Database | SQLite via SQLAlchemy |
+| Auth | JWT (PyJWT + Argon2 password hashing) |
+| Background jobs | Redis + RQ (`rq==1.15.1`, `rq-win` for Windows) |
+| Resume parsing | Google Gemini API (`google-genai`) |
+| Embeddings | `sentence-transformers` (`all-MiniLM-L6-v2`) or OpenAI |
+| PDF parsing | `pypdf` |
+| DOCX parsing | `python-docx` |
+
+---
+
+## Project Structure
+
+```
+resume_screener_v3_frontend/
+├── backend/
+│   ├── main.py              # FastAPI app entry point
+│   ├── models.py            # SQLAlchemy ORM models
+│   ├── schemas.py           # Pydantic request/response schemas
+│   ├── database.py          # DB engine, session, Base
+│   ├── config.py            # Settings loaded from .env
+│   ├── auth.py              # JWT auth and password utils
+│   ├── queue_client.py      # Redis + RQ Queue setup
+│   ├── worker.py            # Background job functions (process_job, process_application)
+│   ├── requirements.txt
+│   ├── .env                 # Environment variables (not committed)
+│   ├── routers/
+│   │   ├── auth_routes.py   # /auth endpoints (register, login)
+│   │   ├── recruiter.py     # /api/jobs endpoints
+│   │   └── application.py   # /application endpoints
+│   └── services/
+│       ├── embedding.py     # Embedding generation (sentence-transformers / OpenAI)
+│       ├── parser.py        # Resume text extraction + Gemini LLM parsing
+│       ├── scorer.py        # Match score calculation
+│       └── util.py          # Cosine similarity helper
+├── run_worker.py            # Windows-compatible RQ worker launcher
+├── docker-compose.yml       # Redis service
+└── storage/                 # Uploaded resume files (auto-created)
+```
+
+---
+
+## Setup
+
+### 1. Clone & create a virtual environment
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/macOS
+pip install -r requirements.txt
+```
+
+### 2. Configure environment variables
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL=sqlite:///./resumeScreener.db
+SECRET_KEY=your_secret_key_here
+EMBEDDING_PROVIDER=          # leave empty to use sentence-transformers (local), or set to "openai"
+OPENAI_API_KEY=              # required only if EMBEDDING_PROVIDER=openai
+REDIS_URL=redis://localhost:6379
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### 3. Start Redis
+
+**Option A — Docker (recommended):**
+```bash
+docker-compose up -d
+```
+
+**Option B — WSL (Windows):**
+```bash
+# inside WSL terminal
+sudo service redis-server start
+```
+
+---
+
+## Running the Application
+
+You need **three terminals** running concurrently:
+
+### Terminal 1 — FastAPI server
+```bash
+# from project root, with venv activated
+fastapi dev backend/main.py
+```
+
+### Terminal 2 — RQ Worker
+```bash
+# from project root, with venv activated
+python run_worker.py
+```
+
+### Terminal 3 — Redis (if not using Docker/WSL as a background service)
+```bash
+redis-server
+```
+
+---
+
+## API Endpoints
+
+### Auth — `/auth`
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/auth/register` | Register a new recruiter |
+| `POST` | `/auth/login` | Login and receive a JWT token |
+
+### Jobs (Recruiter) — `/api/jobs`
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/jobs` | Create a job posting (triggers background embedding) |
+| `GET` | `/api/jobs` | List all jobs for the authenticated recruiter |
+| `GET` | `/api/jobs/{job_id}` | Get a specific job posting |
+| `PATCH` | `/api/jobs/{job_id}` | Update a job posting |
+| `DELETE` | `/api/jobs/{job_id}` | Delete a job posting |
+| `GET` | `/api/jobs/{job_id}/candidates` | List ranked candidates for a job |
+| `GET` | `/api/jobs/{job_id}/candidate/{candidate_id}` | Get a specific candidate's details |
+| `GET` | `/api/jobs/{job_id}/analytics` | Get analytics for a job |
+
+### Applications — `/application`
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/application/apply/{job_id}` | Submit a job application with resume upload |
+
+---
+
+## Background Processing
+
+When a job is posted or a candidate applies, a job is enqueued in Redis and processed by the worker:
+
+**Job posted** → `process_job(job_id)`:
+1. Generates embedding for `job_description` → stored as `job_vector`
+2. Generates embedding for `required_skills` → stored as `skills_vector`
+3. Sets `processing_status = "ready"`
+
+**Candidate applies** → `process_application(candidate_id)`:
+1. Parses resume (PDF/DOCX) with Gemini → extracts `skills`, `raw_text`
+2. Generates embeddings for raw text and skills
+3. Scores candidate against the job using semantic + keyword matching
+4. Sets `processing_status = "ready"` with scores stored in DB
+
+---
+
+## Windows Notes
+
+The standard `rq worker` command uses `os.fork()` which does not exist on Windows. This project uses `rq-win`'s `WindowsWorker` via `run_worker.py` to work around this limitation.
+
+> **Note:** Job timeouts are not enforced on Windows (no `SIGALRM`). For production, run the worker on Linux or WSL2.
