@@ -28,49 +28,42 @@ An AI-powered resume screening backend that automatically parses resumes, genera
 ---
 
 ## Project Structure
-
-```
-resume_screener_v3_frontend/
-├── backend/
-│   ├── main.py              # FastAPI app entry point
-│   ├── models.py            # SQLAlchemy ORM models
-│   ├── schemas.py           # Pydantic request/response schemas
-│   ├── database.py          # DB engine, session, Base
-│   ├── config.py            # Settings loaded from .env
-│   ├── auth.py              # JWT auth and password utils
-│   ├── queue_client.py      # Redis + RQ Queue setup
-│   ├── worker.py            # Background job functions (process_job, process_application)
-│   ├── requirements.txt
-│   ├── .env                 # Environment variables (not committed)
-│   ├── routers/
-│   │   ├── auth_routes.py   # /auth endpoints (register, login)
-│   │   ├── recruiter.py     # /api/jobs endpoints
-│   │   └── application.py   # /application endpoints
-│   └── services/
-│       ├── embedding.py     # Embedding generation (sentence-transformers / OpenAI)
-│       ├── parser.py        # Resume text extraction + Gemini LLM parsing
-│       ├── scorer.py        # Match score calculation
-│       └── util.py          # Cosine similarity helper
-├── run_worker.py            # Windows-compatible RQ worker launcher
-├── docker-compose.yml       # Redis service
-└── storage/                 # Uploaded resume files (auto-created)
-```
-
----
-
-## Setup
-
-### 1. Clone & create a virtual environment
-
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/macOS
-pip install -r requirements.txt
-```
-
-### 2. Configure environment variables
+ 
+ ```
+ ai_resume_screener/
+ ├── backend/             # FastAPI backend (Python)
+ │   ├── main.py
+ │   ├── routers/
+ │   └── requirements.txt
+ ├── frontend/            # React frontend (Vite/JS)
+ │   ├── src/
+ │   ├── package.json
+ │   └── vite.config.js
+ ├── run_worker.py        # Windows-compatible RQ worker launcher
+ ├── docker-compose.yml   # Redis service
+ ├── storage/             # Uploaded resumes
+ └── .gitignore           # Monorepo git rules
+ ```
+ 
+ ---
+ 
+ ## Setup
+ 
+ ### 1. Backend venv set up
+ 
+ ```bash
+ # With venv activated
+ pip install -r backend/requirements.txt
+ ```
+ 
+ ### 2. Frontend set up
+ 
+ ```bash
+ cd frontend
+ npm install
+ ```
+ 
+ ### 3. Configure environment variables
 
 Create `backend/.env`:
 
@@ -83,7 +76,7 @@ REDIS_URL=redis://localhost:6379
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-### 3. Start Redis
+### 4. Start Redis
 
 **Option A — Docker (recommended):**
 ```bash
@@ -97,27 +90,33 @@ sudo service redis-server start
 ```
 
 ---
-
-## Running the Application
-
-You need **three terminals** running concurrently:
-
-### Terminal 1 — FastAPI server
-```bash
-# from project root, with venv activated
-fastapi dev backend/main.py
-```
-
-### Terminal 2 — RQ Worker
-```bash
-# from project root, with venv activated
-python run_worker.py
-```
-
-### Terminal 3 — Redis (if not using Docker/WSL as a background service)
-```bash
-redis-server
-```
+ 
+ ## Running the Application
+ 
+ You need **four terminals** running concurrently (all from the root folder):
+ 
+ ### Terminal 1 — Backend API
+ ```bash
+ .\venv\Scripts\activate
+ uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+ ```
+ 
+ ### Terminal 2 — Worker
+ ```bash
+ .\venv\Scripts\activate
+ python run_worker.py
+ ```
+ 
+ ### Terminal 3 — Frontend
+ ```bash
+ cd frontend
+ npm run dev
+ ```
+ 
+ ### Terminal 4 — Redis
+ ```bash
+ docker start redis-resume-screener
+ ```
 
 ---
 

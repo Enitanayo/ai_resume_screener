@@ -27,7 +27,7 @@ ALLOWED_RESUME_TYPES = {
     "application/msword": ".doc",
 }
 
-RESUME_STORAGE = Path("C:\\Projects\\resume_screener_v3_frontend\\storage")
+RESUME_STORAGE = Path(__file__).resolve().parents[2] / "storage"
 
 def save_resume(file: UploadFile, job_id: int) -> str:
     if file.content_type not in ALLOWED_RESUME_TYPES:
