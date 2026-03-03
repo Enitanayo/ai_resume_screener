@@ -8,7 +8,7 @@ from fastapi import (
     status,
 )
 from backend.queue_client import queue
-from backend.worker import process_application
+# from backend.worker import process_application
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import uuid4
@@ -106,6 +106,6 @@ def apply_for_job(
     db.refresh(candidate)
 
     # 5. Trigger background processing (later)
-    queue.enqueue(process_application, candidate.id)
+    queue.enqueue("backend.worker.process_application", candidate.id)
 
     return candidate

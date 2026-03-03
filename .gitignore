@@ -59,3 +59,5 @@ secrets.yaml
 *.db
 storage/
 *.vscode/
+
+frontend/

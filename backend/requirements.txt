@@ -11,3 +11,5 @@ google-genai
 tenacity
 pypdf
 python-docx
+psycopg2-binary
+pgvector
