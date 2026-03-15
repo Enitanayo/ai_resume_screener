@@ -44,7 +44,7 @@ const Modal = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                     />
 
                     {/* Modal Panel */}
@@ -54,21 +54,21 @@ const Modal = ({
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            'relative w-full bg-white dark:bg-dark-800 rounded-xl shadow-2xl',
-                            'border border-gray-200 dark:border-dark-700',
+                            'relative w-full bg-dark-800 rounded-2xl shadow-2xl shadow-black/40',
+                            'border border-white/[0.06]',
                             sizeClasses[size],
                             className
                         )}
                     >
                         {/* Header */}
                         {title && (
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-700">
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+                                <h2 className="text-lg font-semibold text-dark-50">
                                     {title}
                                 </h2>
                                 <button
                                     onClick={onClose}
-                                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-dark-700 transition-colors"
+                                    className="p-1.5 rounded-xl text-dark-400 hover:text-dark-200 hover:bg-white/[0.04] transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -76,7 +76,7 @@ const Modal = ({
                         )}
 
                         {/* Body */}
-                        <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                        <div className="px-6 py-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             {children}
                         </div>
                     </motion.div>

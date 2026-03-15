@@ -23,15 +23,15 @@ import autoTable from 'jspdf-autotable';
 const MAX_FILES = 50;
 
 const medalConfig = {
-    0: { icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-300 dark:border-amber-600', label: '1st' },
-    1: { icon: Medal, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800/40', border: 'border-gray-300 dark:border-gray-600', label: '2nd' },
-    2: { icon: Award, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-300 dark:border-orange-600', label: '3rd' },
+    0: { icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: '1st' },
+    1: { icon: Medal, color: 'text-dark-300', bg: 'bg-white/[0.04]', border: 'border-white/[0.06]', label: '2nd' },
+    2: { icon: Award, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', label: '3rd' },
 };
 
 const getScoreColor = (percentage) => {
-    if (percentage >= 70) return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' };
-    if (percentage >= 40) return { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' };
-    return { bar: 'bg-red-500', text: 'text-red-600 dark:text-red-400' };
+    if (percentage >= 70) return { bar: 'bg-emerald-500', text: 'text-emerald-400' };
+    if (percentage >= 40) return { bar: 'bg-amber-500', text: 'text-amber-400' };
+    return { bar: 'bg-red-500', text: 'text-red-400' };
 };
 
 // Processing pipeline stages
@@ -139,6 +139,10 @@ const BatchUpload = () => {
             showToast.error('Please select files to upload');
             return;
         }
+
+        // Reset state for new run
+        setRankedResults([]);
+        setCurrentBatchIds([]);
 
         try {
             // Step 1: Upload files
@@ -306,8 +310,8 @@ const BatchUpload = () => {
         <DashboardLayout>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Resume Upload & Ranking</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <h1 className="text-2xl font-heading font-bold text-dark-50">Resume Upload & Ranking</h1>
+                    <p className="text-dark-400 mt-1">
                         Upload resumes, run AI analysis, and see ranked results — all in one place
                     </p>
                 </div>
@@ -317,7 +321,7 @@ const BatchUpload = () => {
                     <div className="lg:col-span-1 space-y-5">
                         {/* Job Selector */}
                         <Card className="p-5">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">1. Select Job</h3>
+                            <h3 className="text-sm font-semibold text-dark-50 mb-3">1. Select Job</h3>
                             <Dropdown
                                 value={selectedJobId}
                                 options={jobOptions}
@@ -330,29 +334,29 @@ const BatchUpload = () => {
                         {/* Existing candidates summary */}
                         {selectedJobId && (
                             <Card className="p-5">
-                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                <h3 className="text-sm font-semibold text-dark-50 mb-3 flex items-center gap-2">
                                     <Users className="w-4 h-4" />
                                     Existing Applicants
                                 </h3>
                                 {isLoadingCandidates ? (
-                                    <p className="text-sm text-gray-500">Loading...</p>
+                                    <p className="text-sm text-dark-400">Loading...</p>
                                 ) : existingCandidates.length === 0 ? (
-                                    <p className="text-sm text-gray-500">No applicants yet for this job</p>
+                                    <p className="text-sm text-dark-400">No applicants yet for this job</p>
                                 ) : (
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600 dark:text-gray-400">Total</span>
-                                            <span className="font-medium text-gray-900 dark:text-white">{existingCandidates.length}</span>
+                                            <span className="text-dark-400">Total</span>
+                                            <span className="font-medium text-dark-50 font-mono">{existingCandidates.length}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-green-600 dark:text-green-400">Analysed</span>
-                                            <span className="font-medium">{processedCount}</span>
+                                            <span className="text-emerald-400">Analysed</span>
+                                            <span className="font-medium font-mono">{processedCount}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-yellow-600 dark:text-yellow-400">Pending</span>
-                                            <span className="font-medium">{pendingCount}</span>
+                                            <span className="text-amber-400">Pending</span>
+                                            <span className="font-medium font-mono">{pendingCount}</span>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-2">
+                                        <p className="text-xs text-dark-500 mt-2">
                                             Previous uploads are stored securely but are excluded from the current ranking display.
                                         </p>
                                     </div>
@@ -362,16 +366,16 @@ const BatchUpload = () => {
 
                         {/* File Upload */}
                         <Card className="p-5">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">2. Upload New Resumes</h3>
+                            <h3 className="text-sm font-semibold text-dark-50 mb-3">2. Upload New Resumes</h3>
                             <div
-                                className="p-6 border-2 border-dashed border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-500 rounded-xl transition-colors cursor-pointer text-center"
+                                className="p-6 border-2 border-dashed border-white/[0.08] hover:border-primary-500/40 rounded-xl transition-colors cursor-pointer text-center"
                                 onClick={() => fileInputRef.current?.click()}
                                 onDrop={handleDrop}
                                 onDragOver={e => e.preventDefault()}
                             >
-                                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Drop files or click to browse</p>
-                                <p className="text-xs text-gray-500 mt-1">PDF / DOCX • Max {MAX_FILES}</p>
+                                <Upload className="w-8 h-8 mx-auto text-dark-400 mb-2" />
+                                <p className="text-sm font-medium text-dark-200">Drop files or click to browse</p>
+                                <p className="text-xs text-dark-500 mt-1">PDF / DOCX • Max {MAX_FILES}</p>
                             </div>
                             <input
                                 ref={fileInputRef}
@@ -392,20 +396,20 @@ const BatchUpload = () => {
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 exit={{ opacity: 0, x: 10 }}
-                                                className="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
+                                                className="flex items-center justify-between py-1.5 px-3 bg-white/[0.03] rounded-lg"
                                             >
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <FileText className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
-                                                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
+                                                    <FileText className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+                                                    <span className="text-xs text-dark-200 truncate">{file.name}</span>
                                                 </div>
-                                                <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                                                <button onClick={() => removeFile(i)} className="text-dark-500 hover:text-red-400 transition-colors">
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
                                             </motion.div>
                                         ))}
                                         <div className="flex justify-between items-center pt-1">
-                                            <span className="text-xs text-gray-500">{files.length} file(s)</span>
-                                            <button onClick={() => setFiles([])} className="text-xs text-red-500 hover:text-red-600">Clear all</button>
+                                            <span className="text-xs text-dark-500">{files.length} file(s)</span>
+                                            <button onClick={() => setFiles([])} className="text-xs text-red-400 hover:text-red-300">Clear all</button>
                                         </div>
                                     </div>
                                 )}
@@ -446,107 +450,182 @@ const BatchUpload = () => {
                     </div>
 
                     {/* RIGHT COLUMN: Rankings / Results */}
-                    <div className="lg:col-span-2">
-                        {rankedResults.length > 0 ? (
-                            <div className="space-y-4">
-                                {/* Header with download buttons */}
-                                <div className="flex items-center justify-between flex-wrap gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20">
-                                            <Trophy className="w-5 h-5 text-white" />
+                    <div className="lg:col-span-2 min-h-[400px]">
+                        <AnimatePresence mode="wait">
+                            {rankedResults.length > 0 ? (
+                                <motion.div
+                                    key="results"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="space-y-4"
+                                >
+                                    {/* Header with download buttons */}
+                                    <div className="flex items-center justify-between flex-wrap gap-3 p-1">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 rounded-2xl bg-gradient-to-tr from-primary-600 to-violet-600 shadow-xl shadow-primary-500/20">
+                                                <Trophy className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+                                                    Match Rankings
+                                                </h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {rankedResults.length} candidate(s) analyzed by Gemini AI
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Rankings</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                {rankedResults.length} candidate(s) ranked by AI match score
-                                            </p>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="secondary" size="sm" icon={Download} onClick={downloadPDF} className="rounded-xl">
+                                                PDF
+                                            </Button>
+                                            <Button variant="secondary" size="sm" icon={Download} onClick={downloadWord} className="rounded-xl">
+                                                Doc
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="secondary" size="sm" icon={Download} onClick={downloadPDF}>
-                                            PDF
-                                        </Button>
-                                        <Button variant="secondary" size="sm" icon={Download} onClick={downloadWord}>
-                                            Word
-                                        </Button>
-                                    </div>
-                                </div>
 
-                                {/* Leaderboard */}
-                                <div className="space-y-2.5">
-                                    {rankedResults.map((result, index) => {
-                                        const medal = medalConfig[index];
-                                        const percentage = result.match_percentage || 0;
-                                        const scoreColors = getScoreColor(percentage);
+                                    {/* Leaderboard */}
+                                    <div className="space-y-3 mt-4">
+                                        <AnimatePresence>
+                                            {rankedResults.map((result, index) => {
+                                                const medal = medalConfig[index];
+                                                const percentage = result.match_percentage || 0;
+                                                const scoreColors = getScoreColor(percentage);
 
-                                        return (
-                                            <motion.div
-                                                key={result.candidate_id}
-                                                initial={{ opacity: 0, x: -30 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: index * 0.05, type: 'spring', stiffness: 120 }}
-                                            >
-                                                <Card className={`p-4 transition-all duration-300 ${medal ? `border-2 ${medal.border}` : ''}`}>
-                                                    <div className="flex items-center gap-4">
-                                                        {/* Rank */}
-                                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${medal ? medal.bg : 'bg-gray-100 dark:bg-dark-700'}`}>
-                                                            {medal ? (
-                                                                <medal.icon className={`w-5 h-5 ${medal.color}`} />
-                                                            ) : (
-                                                                <span className="text-base font-bold text-gray-500 dark:text-gray-400">{index + 1}</span>
+                                                return (
+                                                    <motion.div
+                                                        key={`candidate-${result.candidate_id}`}
+                                                        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, x: 50 }}
+                                                        transition={{
+                                                            delay: index * 0.08,
+                                                            type: 'spring',
+                                                            stiffness: 100,
+                                                            damping: 15
+                                                        }}
+                                                    >
+                                                        <Card className={`p-5 transition-all duration-500 relative overflow-hidden group
+                                                            ${medal ? 'bg-dark-800/80 backdrop-blur-xl border-white/[0.06] ' + medal.border : 'bg-dark-800 border-white/[0.06]'}
+                                                            hover:shadow-2xl hover:shadow-black/30 hover:-translate-y-1`}>
+
+                                                            {/* Background Glow for Top Candidates */}
+                                                            {index === 0 && (
+                                                                <div className="absolute -right-20 -top-20 w-40 h-40 bg-amber-400/10 blur-[60px] rounded-full pointer-events-none" />
                                                             )}
-                                                        </div>
 
-                                                        {/* Name + Progress */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1.5">
-                                                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                                                    {result.candidate_name || `Candidate ${result.candidate_id?.slice(0, 8)}`}
-                                                                </h4>
-                                                                {medal && <span className={`text-xs font-bold ${medal.color}`}>{medal.label}</span>}
+                                                            <div className="flex items-center gap-5 relative z-10">
+                                                                {/* Rank Badge */}
+                                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
+                                                                    ${medal ? medal.bg : 'bg-white/[0.04]'}`}>
+                                                                    {medal ? (
+                                                                        <medal.icon className={`w-6 h-6 ${medal.color}`} />
+                                                                    ) : (
+                                                                        <span className="text-lg font-black text-dark-500">{index + 1}</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Name + Progress */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <h4 className="text-md font-bold text-dark-50 truncate group-hover:text-primary-400 transition-colors">
+                                                                                {result.candidate_name || `Candidate ${result.candidate_id?.slice(0, 8)}`}
+                                                                            </h4>
+                                                                            {medal && (
+                                                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${medal.bg} ${medal.color} ring-1 ring-inset ${medal.border}`}>
+                                                                                    {medal.label}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className={`text-xl font-black ${scoreColors.text}`}>
+                                                                            {percentage.toFixed(0)}<span className="text-[10px] ml-0.5 opacity-70">%</span>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-full bg-white/[0.04] rounded-full h-2.5 p-0.5 overflow-hidden ring-1 ring-inset ring-white/[0.04]">
+                                                                        <motion.div
+                                                                            className={`h-full rounded-full shadow-sm ${scoreColors.bar}`}
+                                                                            initial={{ width: 0 }}
+                                                                            animate={{ width: `${percentage}%` }}
+                                                                            transition={{ delay: index * 0.1 + 0.4, duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* View Button */}
+                                                                <div className="ml-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        icon={ChevronRight}
+                                                                        onClick={() => handleViewCandidate(result.candidate_id)}
+                                                                        className="rounded-xl hover:bg-primary-500/10 group-hover:translate-x-1 transition-all"
+                                                                    >
+                                                                        View
+                                                                    </Button>
+                                                                </div>
                                                             </div>
-                                                            <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2 overflow-hidden">
-                                                                <motion.div
-                                                                    className={`h-full rounded-full ${scoreColors.bar}`}
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${percentage}%` }}
-                                                                    transition={{ delay: index * 0.05 + 0.3, duration: 0.8, ease: 'easeOut' }}
-                                                                />
-                                                            </div>
-                                                        </div>
+                                                        </Card>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+                            ) : isProcessing ? (
+                                <motion.div
+                                    key="loading"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex flex-col items-center justify-center h-full py-12"
+                                >
+                                    <div className="relative mb-8">
+                                        <div className="w-24 h-24 rounded-full border-4 border-primary-500/20 animate-ping absolute top-0 left-0" />
+                                        <div className="w-24 h-24 rounded-full border-4 border-t-primary-500 border-r-primary-500/30 border-b-primary-500/10 border-l-primary-500/50 animate-spin" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Loader2 className="w-10 h-10 text-primary-500 animate-bounce" />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-dark-50 mb-2 animate-pulse font-heading">
+                                        {stage === STAGES.ANALYSING ? 'AI is scanning resumes...' : 'Calculating match scores...'}
+                                    </h3>
+                                    <p className="text-sm text-dark-400 text-center max-w-xs ring-1 ring-white/[0.06] px-4 py-2 rounded-full bg-dark-800 font-mono">
+                                        {progress.processed}/{progress.total} candidates processed
+                                    </p>
 
-                                                        {/* Score */}
-                                                        <span className={`text-lg font-bold ${scoreColors.text} flex-shrink-0`}>
-                                                            {percentage.toFixed(1)}%
-                                                        </span>
-
-                                                        {/* View Button */}
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            icon={Eye}
-                                                            onClick={() => handleViewCandidate(result.candidate_id)}
-                                                        >
-                                                            View
-                                                        </Button>
-                                                    </div>
-                                                </Card>
-                                            </motion.div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ) : (
-                            <Card className="p-12 text-center h-full flex flex-col items-center justify-center">
-                                <Trophy className="w-14 h-14 text-gray-300 dark:text-dark-600 mb-4" />
-                                <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                                    No Rankings Yet
-                                </h3>
-                                <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm">
-                                    Select a job, upload resumes, and click the button to upload, analyse, and rank all candidates automatically.
-                                </p>
-                            </Card>
-                        )}
+                                    {/* Skeleton Loader */}
+                                    <div className="w-full mt-10 space-y-3">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="h-20 shimmer rounded-2xl opacity-50" />
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="empty"
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="p-12 text-center h-full flex flex-col items-center justify-center border-2 border-dashed border-white/[0.06] rounded-3xl"
+                                >
+                                    <div className="w-20 h-20 rounded-3xl bg-dark-800 flex items-center justify-center mb-6">
+                                        <Trophy className="w-10 h-10 text-dark-600" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-dark-50 mb-2 font-heading">
+                                        Ready for Ranking
+                                    </h3>
+                                    <p className="text-sm text-dark-400 max-w-sm">
+                                        Select a job and upload resumes to see your top-matching candidates with detailed AI scores.
+                                    </p>
+                                    <div className="mt-8 flex gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '0s' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '0.4s' }} />
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
@@ -571,21 +650,21 @@ const BatchUpload = () => {
 // Step indicator component for the processing pipeline
 const Step = ({ label, active, done, sub }) => (
     <div className="flex items-center gap-3">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${done ? 'bg-green-500' : active ? 'bg-primary-500 animate-pulse' : 'bg-gray-200 dark:bg-dark-700'
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${done ? 'bg-emerald-500' : active ? 'bg-primary-500 animate-pulse' : 'bg-white/[0.04]'
             }`}>
             {done ? (
                 <CheckCircle className="w-4 h-4 text-white" />
             ) : active ? (
                 <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
             ) : (
-                <span className="w-2 h-2 rounded-full bg-gray-400" />
+                <span className="w-2 h-2 rounded-full bg-dark-500" />
             )}
         </div>
         <div>
-            <p className={`text-sm font-medium ${done ? 'text-green-600 dark:text-green-400' : active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>
+            <p className={`text-sm font-medium ${done ? 'text-emerald-400' : active ? 'text-primary-400' : 'text-dark-500'}`}>
                 {label}
             </p>
-            {sub && <p className="text-xs text-gray-500">{sub}</p>}
+            {sub && <p className="text-xs text-dark-500 font-mono">{sub}</p>}
         </div>
     </div>
 );

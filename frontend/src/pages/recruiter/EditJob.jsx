@@ -50,7 +50,7 @@ const EditJob = () => {
             <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate(-1)} className="mb-6">
                 Back
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Edit Job</h1>
+            <h1 className="text-2xl font-heading font-bold text-dark-50 mb-6">Edit Job</h1>
             <JobForm
                 initialData={job}
                 onSubmit={handleSubmit}

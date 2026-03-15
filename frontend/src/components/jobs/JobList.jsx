@@ -1,31 +1,45 @@
 import { motion } from 'framer-motion';
+import { Briefcase } from 'lucide-react';
 import JobCard from './JobCard';
-import Loading from '../common/Loading';
+import { CardSkeleton } from '../common/Loading';
 
-const JobList = ({ jobs, isLoading, isRecruiter = false, onDelete, emptyMessage = 'No jobs found' }) => {
+const JobList = ({
+    jobs = [],
+    isLoading = false,
+    isRecruiter = false,
+    onDelete,
+    emptyMessage = 'No jobs found',
+}) => {
     if (isLoading) {
-        return <Loading text="Loading jobs..." />;
+        return (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                    <CardSkeleton key={i} />
+                ))}
+            </div>
+        );
     }
 
-    if (!jobs || jobs.length === 0) {
+    if (jobs.length === 0) {
         return (
-            <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+            <div className="text-center py-12 px-4">
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mx-auto mb-4">
+                    <Briefcase className="w-8 h-8 text-dark-600" />
+                </div>
+                <p className="text-dark-400 font-medium">{emptyMessage}</p>
             </div>
         );
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job, index) => (
-                <motion.div
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {jobs.map((job) => (
+                <JobCard
                     key={job.$id || job.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                >
-                    <JobCard job={job} isRecruiter={isRecruiter} onDelete={onDelete} />
-                </motion.div>
+                    job={job}
+                    isRecruiter={isRecruiter}
+                    onDelete={onDelete}
+                />
             ))}
         </div>
     );

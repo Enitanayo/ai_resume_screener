@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAllJobs, deleteJob as deleteJobApi } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import JobList from '../../components/jobs/JobList';
-import Input from '../../components/common/Input';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import Button from '../../components/common/Button';
-import Dropdown from '../../components/common/Dropdown';
+import Input from '../../components/common/Input';
+import JobList from '../../components/jobs/JobList';
 import Modal from '../../components/common/Modal';
+import Dropdown from '../../components/common/Dropdown';
 import { showToast } from '../../components/common/Toast';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { getAllJobs, deleteJob } from '../../services/api';
 
 const JobsManagement = () => {
     const [jobs, setJobs] = useState([]);
+    const [filteredJobs, setFilteredJobs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState('all');
-    const [deleteId, setDeleteId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, jobId: null });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -24,82 +25,113 @@ const JobsManagement = () => {
     }, []);
 
     const fetchJobs = async () => {
-        setIsLoading(true);
         try {
             const data = await getAllJobs();
             setJobs(data);
+            setFilteredJobs(data);
         } catch (err) {
-            console.error(err);
+            showToast.error('Failed to load jobs');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (!deleteId) return;
-        try {
-            await deleteJobApi(deleteId);
-            setJobs((prev) => prev.filter((j) => (j.$id || j.id) !== deleteId));
-            showToast.success('Job deleted successfully');
-        } catch (err) {
-            console.error('Failed to delete job:', err);
+    useEffect(() => {
+        let result = jobs;
+        if (searchQuery) {
+            result = result.filter((j) =>
+                (j.job_title || j.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+            );
         }
-        setDeleteId(null);
+        if (statusFilter !== 'all') {
+            result = result.filter((j) => j.processing_status === statusFilter);
+        }
+        setFilteredJobs(result);
+    }, [searchQuery, statusFilter, jobs]);
+
+    const handleDelete = async () => {
+        try {
+            await deleteJob(deleteModal.jobId);
+            setJobs((prev) => prev.filter((j) => (j.$id || j.id) !== deleteModal.jobId));
+            showToast.success('Job deleted');
+            setDeleteModal({ isOpen: false, jobId: null });
+        } catch {
+            showToast.error('Failed to delete job');
+        }
     };
 
-    const filtered = jobs
-        .filter((j) => {
-            if (filter === 'active') return j.processing_status === 'ready';
-            if (filter === 'inactive') return j.processing_status !== 'ready';
-            return true;
-        })
-        .filter((j) =>
-            (j.job_title || j.title || '').toLowerCase().includes(search.toLowerCase())
-        );
+    const filterOptions = [
+        { value: 'all', label: 'All Jobs' },
+        { value: 'ready', label: 'Ready' },
+        { value: 'processing', label: 'Processing' },
+    ];
+
+    if (isLoading) return <DashboardLayout><Loading text="Loading jobs..." /></DashboardLayout>;
 
     return (
         <DashboardLayout>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jobs</h1>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+            >
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h1 className="text-2xl font-heading font-bold text-dark-50">Jobs</h1>
                     <Button icon={Plus} onClick={() => navigate('/recruiter/jobs/create')}>
-                        Create Job
+                        New Job
                     </Button>
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
-                        <Input icon={Search} placeholder="Search jobs..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <Input
+                            icon={Search}
+                            placeholder="Search jobs..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
                     <Dropdown
-                        placeholder="All"
-                        value={filter}
-                        options={[
-                            { value: 'all', label: 'All' },
-                            { value: 'active', label: 'Active' },
-                            { value: 'inactive', label: 'Inactive' },
-                        ]}
-                        onSelect={setFilter}
-                        className="w-full sm:w-36"
+                        value={statusFilter}
+                        onSelect={setStatusFilter}
+                        options={filterOptions}
+                        className="w-full sm:w-48"
                     />
                 </div>
 
-                <JobList jobs={filtered} isLoading={isLoading} isRecruiter onDelete={setDeleteId} emptyMessage="No jobs found" />
+                <JobList
+                    jobs={filteredJobs}
+                    isLoading={isLoading}
+                    isRecruiter
+                    onDelete={(id) => setDeleteModal({ isOpen: true, jobId: id })}
+                    emptyMessage="No jobs found"
+                />
 
-                {/* Delete Confirm */}
-                <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Job">
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                        Are you sure you want to delete this job? This action cannot be undone.
-                    </p>
-                    <div className="flex gap-3 justify-end">
-                        <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                {/* Delete Confirmation Modal */}
+                <Modal
+                    isOpen={deleteModal.isOpen}
+                    onClose={() => setDeleteModal({ isOpen: false, jobId: null })}
+                    title="Delete Job"
+                    size="sm"
+                >
+                    <div className="space-y-4">
+                        <p className="text-dark-300">Are you sure you want to delete this job? This action cannot be undone.</p>
+                        <div className="flex gap-3 justify-end">
+                            <Button variant="ghost" onClick={() => setDeleteModal({ isOpen: false, jobId: null })}>
+                                Cancel
+                            </Button>
+                            <Button variant="danger" icon={Trash2} onClick={handleDelete}>
+                                Delete
+                            </Button>
+                        </div>
                     </div>
                 </Modal>
             </motion.div>
         </DashboardLayout>
     );
 };
+
 
 export default JobsManagement;

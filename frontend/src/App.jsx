@@ -47,7 +47,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
+      <div className="min-h-screen bg-dark-950 text-dark-50 grain-overlay transition-colors duration-300">
         <Navbar />
 
         <main className="relative">

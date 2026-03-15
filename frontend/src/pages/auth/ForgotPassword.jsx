@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -18,7 +18,6 @@ const ForgotPassword = () => {
             return;
         }
         setIsLoading(true);
-        // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setIsSubmitted(true);
         setIsLoading(false);
@@ -48,28 +47,28 @@ const ForgotPassword = () => {
                     </Button>
                     <Link
                         to="/login"
-                        className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600"
+                        className="flex items-center justify-center gap-2 text-sm text-dark-400 hover:text-primary-400 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" /> Back to sign in
                     </Link>
                 </form>
             ) : (
                 <div className="space-y-5 text-center">
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-full w-fit mx-auto">
-                        <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    <div className="p-4 bg-emerald-500/10 rounded-2xl w-fit mx-auto">
+                        <CheckCircle className="w-8 h-8 text-emerald-400" />
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-dark-400">
                         Didn't receive the email? Check your spam folder or{' '}
                         <button
                             onClick={() => setIsSubmitted(false)}
-                            className="text-primary-600 hover:text-primary-500 font-medium"
+                            className="text-primary-400 hover:text-primary-300 font-medium"
                         >
                             try again
                         </button>
                     </p>
                     <Link
                         to="/login"
-                        className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600"
+                        className="flex items-center justify-center gap-2 text-sm text-dark-400 hover:text-primary-400 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" /> Back to sign in
                     </Link>

@@ -1,19 +1,13 @@
 import { create } from 'zustand';
 
 const useThemeStore = create((set, get) => ({
-    isDarkMode: false,
+    isDarkMode: true,
 
     initializeTheme: () => {
-        const stored = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = stored ? stored === 'dark' : prefersDark;
-
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        set({ isDarkMode: isDark });
+        // Always use dark mode for the premium dark theme
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        set({ isDarkMode: true });
     },
 
     toggleTheme: () => {

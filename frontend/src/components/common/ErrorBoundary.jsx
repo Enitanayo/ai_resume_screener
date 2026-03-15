@@ -23,22 +23,24 @@ class ErrorBoundary extends Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
-                    <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-full mb-4">
-                        <AlertTriangle className="w-10 h-10 text-red-500" />
+                <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-dark-950 rounded-2xl border border-white/[0.06]">
+                    <div className="p-5 bg-red-500/10 rounded-2xl mb-6 shadow-xl shadow-red-500/10">
+                        <AlertTriangle className="w-12 h-12 text-red-500" />
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    <h2 className="text-2xl font-heading font-bold text-dark-50 mb-3">
                         Something went wrong
                     </h2>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-                        An unexpected error occurred. Please try refreshing the page.
+                    <p className="text-dark-400 mb-8 max-w-md">
+                        Our AI encountered an unexpected glitch. Please try refreshing or resetting the application state.
                     </p>
                     <Button
                         variant="primary"
+                        size="lg"
                         icon={RefreshCcw}
                         onClick={this.handleReset}
+                        className="px-8 shadow-lg shadow-indigo-500/20"
                     >
-                        Try Again
+                        Reset Application
                     </Button>
                 </div>
             );

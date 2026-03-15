@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, UserCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, ArrowRight, Briefcase, UserCircle } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import useAuthStore from '../../store/authStore';
-import { validateRegisterForm } from '../../utils/validators';
 import { showToast } from '../../components/common/Toast';
+import useAuthStore from '../../store/authStore';
+import cn from '../../utils/cn';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -17,86 +17,95 @@ const Register = () => {
         role: 'candidate',
     });
     const [errors, setErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const { register } = useAuthStore();
     const navigate = useNavigate();
+    const { register, isLoading, error } = useAuthStore();
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (errors[e.target.name]) {
+            setErrors({ ...errors, [e.target.name]: '' });
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.name) newErrors.name = 'Name is required';
+        if (!formData.email) newErrors.email = 'Email is required';
+        if (!formData.password) newErrors.password = 'Password is required';
+        if (formData.password.length < 8)
+            newErrors.password = 'Password must be at least 8 characters';
+        if (formData.password !== formData.confirmPassword)
+            newErrors.confirmPassword = 'Passwords do not match';
+        return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const validation = validateRegisterForm(formData);
-        if (!validation.valid) {
-            setErrors(validation.errors);
+        const newErrors = validate();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        setIsLoading(true);
         try {
-            const result = await register(
-                formData.email,
-                formData.password,
-                formData.name,
-                formData.role
-            );
-
-            if (result?.success) {
-                showToast.success('Account created! You are now logged in.');
-                if (formData.role === 'recruiter') {
-                    navigate('/recruiter/dashboard');
-                } else {
-                    navigate('/candidate/browse');
-                }
+            await register(formData.name, formData.email, formData.password, formData.role);
+            showToast.success('Account created! Welcome aboard.');
+            if (formData.role === 'recruiter') {
+                navigate('/recruiter/dashboard');
             } else {
-                // Parse errors
-                const errorMsg = (result?.error || '').toLowerCase();
-                const newErrors = {};
-
-                if (errorMsg.includes('password')) {
-                    if (errorMsg.includes('short') || errorMsg.includes('8')) {
-                        newErrors.password = 'Password must be at least 8 characters';
-                    } else {
-                        newErrors.password = 'Invalid password format';
-                    }
-                } else if (errorMsg.includes('email') || errorMsg.includes('user already exists')) {
-                    newErrors.email = 'Account with this email already exists';
-                } else if (errorMsg.includes('name')) {
-                    newErrors.name = 'Please enter a valid name';
-                } else {
-                    // Fallback
-                    showToast.error(result?.error || 'Registration failed');
-                }
-
-                if (Object.keys(newErrors).length > 0) {
-                    setErrors(newErrors);
-                }
+                navigate('/candidate/browse');
             }
-        } catch (err) {
-            // Fallback for unexpected exceptions
-            showToast.error(err.message || 'Registration failed');
-        } finally {
-            setIsLoading(false);
+        } catch {
+            showToast.error(error || 'Registration failed');
         }
     };
 
+    const roleOptions = [
+        { value: 'candidate', label: 'Candidate', icon: UserCircle, desc: 'Browse and apply to jobs' },
+        { value: 'recruiter', label: 'Recruiter', icon: Briefcase, desc: 'Post jobs and screen candidates' },
+    ];
+
     return (
-        <AuthLayout title="Create an account" subtitle="Join ResumeAI and streamline your hiring">
+        <AuthLayout title="Create your account" subtitle="Start screening smarter in minutes">
             <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Role Selection */}
+                <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-dark-300">I am a...</label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {roleOptions.map((r) => {
+                            const Icon = r.icon;
+                            return (
+                                <button
+                                    key={r.value}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, role: r.value })}
+                                    className={cn(
+                                        'flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200',
+                                        formData.role === r.value
+                                            ? 'bg-primary-500/10 border-primary-500/30 text-primary-400'
+                                            : 'bg-dark-900 border-white/[0.06] text-dark-400 hover:border-white/[0.12]'
+                                    )}
+                                >
+                                    <Icon className="w-6 h-6" />
+                                    <span className="text-sm font-semibold">{r.label}</span>
+                                    <span className="text-xs text-dark-500">{r.desc}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 <Input
                     label="Full Name"
                     name="name"
                     icon={User}
-                    placeholder="John Doe"
+                    placeholder="Your name"
                     value={formData.name}
                     onChange={handleChange}
                     error={errors.name}
                 />
                 <Input
-                    label="Email"
+                    label="Email Address"
                     name="email"
                     type="email"
                     icon={Mail}
@@ -110,7 +119,7 @@ const Register = () => {
                     name="password"
                     type="password"
                     icon={Lock}
-                    placeholder="••••••••"
+                    placeholder="Min. 8 characters"
                     value={formData.password}
                     onChange={handleChange}
                     error={errors.password}
@@ -120,53 +129,34 @@ const Register = () => {
                     name="confirmPassword"
                     type="password"
                     icon={Lock}
-                    placeholder="••••••••"
+                    placeholder="Repeat your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     error={errors.confirmPassword}
                 />
 
-                {/* Role select */}
-                <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        I am a
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { value: 'candidate', label: 'Candidate', icon: User },
-                            { value: 'recruiter', label: 'Recruiter', icon: UserCheck },
-                        ].map(({ value, label, icon: Icon }) => (
-                            <button
-                                key={value}
-                                type="button"
-                                onClick={() => setFormData((prev) => ({ ...prev, role: value }))}
-                                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all
-                  ${formData.role === value
-                                        ? 'border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:border-primary-400 dark:text-primary-400'
-                                        : 'border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-400 hover:border-gray-300'
-                                    }`}
-                            >
-                                <Icon className="w-4 h-4" />
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                        ⚠ Your role cannot be changed after registration.
-                    </p>
-                </div>
+                {error && (
+                    <p className="text-sm text-red-400 bg-red-500/10 px-4 py-2 rounded-xl">{error}</p>
+                )}
 
-                <Button type="submit" variant="primary" size="lg" fullWidth isLoading={isLoading}>
+                <Button
+                    type="submit"
+                    fullWidth
+                    size="lg"
+                    isLoading={isLoading}
+                    icon={ArrowRight}
+                    iconPosition="right"
+                >
                     Create Account
                 </Button>
-
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-primary-600 hover:text-primary-500 font-medium">
-                        Sign in
-                    </Link>
-                </p>
             </form>
+
+            <p className="text-center text-sm text-dark-400 mt-6">
+                Already have an account?{' '}
+                <Link to="/login" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors">
+                    Sign in
+                </Link>
+            </p>
         </AuthLayout>
     );
 };

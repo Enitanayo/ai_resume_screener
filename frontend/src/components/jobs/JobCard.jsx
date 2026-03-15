@@ -29,16 +29,16 @@ const JobCard = ({ job, isRecruiter = false, onDelete }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2 }}
-            transition={{ duration: 0.2 }}
+            whileHover={{ y: -6 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
-            <Card hover className="p-6 h-full flex flex-col" onClick={handleClick}>
+            <Card hover className="p-6 h-full flex flex-col cursor-pointer hover:shadow-2xl hover:shadow-black/30 hover:border-primary-500/15" onClick={handleClick}>
                 <div className="flex items-start justify-between mb-3">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                        <h3 className="text-lg font-semibold text-dark-50 mb-1">
                             {job.job_title || job.title}
                         </h3>
-                        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
+                        <div className="flex items-center gap-3 text-sm text-dark-400 flex-wrap">
                             <span className="flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5" />
                                 {formatDate(job.created_at)}
@@ -52,7 +52,7 @@ const JobCard = ({ job, isRecruiter = false, onDelete }) => {
                     </div>
                 </div>
 
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-1 line-clamp-2">
+                <p className="text-sm text-dark-400 mb-4 flex-1 line-clamp-2">
                     {job.job_description || job.description}
                 </p>
 
@@ -70,7 +70,7 @@ const JobCard = ({ job, isRecruiter = false, onDelete }) => {
                     )}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-dark-700">
+                <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -91,7 +91,7 @@ const JobCard = ({ job, isRecruiter = false, onDelete }) => {
                                 e.stopPropagation();
                                 onDelete(jobId);
                             }}
-                            className="relative z-10 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            className="relative z-10 p-2 rounded-xl text-dark-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             title="Delete job"
                         >
                             <Trash2 className="w-4 h-4" />

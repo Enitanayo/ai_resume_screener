@@ -19,7 +19,6 @@ const Analytics = () => {
                 const jobsData = await getAllJobs();
                 setJobs(jobsData);
 
-                // Load candidates for all jobs
                 const allCandidates = [];
                 for (const job of jobsData.slice(0, 10)) {
                     try {
@@ -55,8 +54,8 @@ const Analytics = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">Recruitment insights and metrics</p>
+                        <h1 className="text-2xl font-heading font-bold text-dark-50">Analytics</h1>
+                        <p className="text-dark-400 mt-1">Recruitment insights and metrics</p>
                     </div>
                     <Dropdown
                         value={selectedJobId}

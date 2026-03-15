@@ -28,8 +28,8 @@ const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => {
                         <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
+                        <p className="text-sm text-dark-400 font-medium">{label}</p>
+                        <p className="text-2xl font-bold text-dark-50 mt-0.5 font-mono">{value}</p>
                     </div>
                 </div>
             </Card>
@@ -83,9 +83,9 @@ const PieChart = ({ data }) => {
                 {segments.map((s) => (
                     <div key={s.status} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                        <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">{s.status}</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{s.count}</span>
-                        <span className="text-xs text-gray-400">({s.percent.toFixed(0)}%)</span>
+                        <span className="text-sm text-dark-400 capitalize">{s.status}</span>
+                        <span className="text-sm font-bold text-dark-50 font-mono">{s.count}</span>
+                        <span className="text-xs text-dark-500 font-mono">({s.percent.toFixed(0)}%)</span>
                     </div>
                 ))}
             </div>
@@ -111,12 +111,11 @@ const BarChart = ({ data }) => {
                             className="w-full bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-lg relative group cursor-pointer"
                             style={{ minHeight: heightPercent > 0 ? '8px' : '0px' }}
                         >
-                            {/* Tooltip */}
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-dark-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-dark-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/[0.06]">
                                 {item.count} app{item.count !== 1 ? 's' : ''}
                             </div>
                         </motion.div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 transform -rotate-45 origin-top-left mt-1">
+                        <span className="text-xs text-dark-400 transform -rotate-45 origin-top-left mt-1">
                             {item.month.slice(5)}
                         </span>
                     </div>
@@ -150,8 +149,8 @@ const CandidateAnalytics = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Analytics</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Track your application activity and progress</p>
+                    <h1 className="text-2xl font-heading font-bold text-dark-50">My Analytics</h1>
+                    <p className="text-dark-400 mt-1">Track your application activity and progress</p>
                 </div>
 
                 {/* Stats Grid */}
@@ -164,16 +163,11 @@ const CandidateAnalytics = () => {
 
                 {/* Last Application Date */}
                 {analytics?.last_application_date && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        className="mb-8"
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mb-8">
                         <Card className="p-4 flex items-center gap-3">
-                            <Calendar className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Last application:</span>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            <Calendar className="w-5 h-5 text-primary-400" />
+                            <span className="text-sm text-dark-400">Last application:</span>
+                            <span className="text-sm font-semibold text-dark-50">
                                 {formatDate(analytics.last_application_date)}
                             </span>
                         </Card>
@@ -182,28 +176,18 @@ const CandidateAnalytics = () => {
 
                 {/* Charts Section */}
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Status Breakdown Pie Chart */}
                     {analytics?.status_breakdown && Object.keys(analytics.status_breakdown).length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                        >
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Status Breakdown</h2>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                            <h2 className="text-lg font-semibold text-dark-50 mb-4">Status Breakdown</h2>
                             <Card className="p-6">
                                 <PieChart data={analytics.status_breakdown} />
                             </Card>
                         </motion.div>
                     )}
 
-                    {/* Application Timeline Bar Chart */}
                     {analytics?.application_timeline?.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                        >
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Timeline</h2>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                            <h2 className="text-lg font-semibold text-dark-50 mb-4">Application Timeline</h2>
                             <Card className="p-6">
                                 <BarChart data={analytics.application_timeline} />
                             </Card>
@@ -213,15 +197,11 @@ const CandidateAnalytics = () => {
 
                 {/* Empty State */}
                 {analytics?.total_applied === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
                         <Card className="p-12 text-center mt-4">
-                            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Application Data</h3>
-                            <p className="text-gray-500 dark:text-gray-400">Start applying to jobs to see your analytics here.</p>
+                            <BarChart3 className="w-12 h-12 text-dark-600 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-dark-50 mb-2">No Application Data</h3>
+                            <p className="text-dark-400">Start applying to jobs to see your analytics here.</p>
                         </Card>
                     </motion.div>
                 )}

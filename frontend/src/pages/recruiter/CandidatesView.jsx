@@ -65,10 +65,10 @@ const CandidatesView = () => {
 
                 {/* Job Header */}
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    <h1 className="text-2xl font-heading font-bold text-dark-50 mb-1">
                         {job?.job_title || 'Job'}
                     </h1>
-                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-3 text-sm text-dark-400">
                         <Badge variant={job?.processing_status === 'ready' ? 'success' : 'warning'} dot size="sm">
                             {job?.processing_status || 'Processing'}
                         </Badge>
@@ -81,23 +81,23 @@ const CandidatesView = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <Card className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <div className="p-2 rounded-xl bg-blue-500/10">
+                                    <Users className="w-5 h-5 text-blue-400" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Applicants</p>
-                                    <p className="text-lg font-bold text-gray-900 dark:text-white">{analytics.total_applicants}</p>
+                                    <p className="text-xs text-dark-400">Total Applicants</p>
+                                    <p className="text-lg font-bold text-dark-50 font-mono">{analytics.total_applicants}</p>
                                 </div>
                             </div>
                         </Card>
                         <Card className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
-                                    <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                <div className="p-2 rounded-xl bg-emerald-500/10">
+                                    <Award className="w-5 h-5 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Avg Score</p>
-                                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                    <p className="text-xs text-dark-400">Avg Score</p>
+                                    <p className="text-lg font-bold text-dark-50 font-mono">
                                         {(analytics.average_score * 100).toFixed(1)}%
                                     </p>
                                 </div>
@@ -105,7 +105,7 @@ const CandidatesView = () => {
                         </Card>
                         <Card className="p-4">
                             <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Top Skills</p>
+                                <p className="text-xs text-dark-400 mb-2">Top Skills</p>
                                 <div className="flex flex-wrap gap-1">
                                     {(analytics.top_skills || []).slice(0, 5).map((skill) => (
                                         <Badge key={skill} variant="primary" size="sm">{skill}</Badge>
@@ -150,16 +150,16 @@ const CandidatesView = () => {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4 min-w-0">
                                                 {/* Rank */}
-                                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-400">
+                                                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600/80 to-blue-500/80 flex items-center justify-center text-sm font-bold text-white">
                                                     {index + 1}
                                                 </div>
 
                                                 {/* Info */}
                                                 <div className="min-w-0">
-                                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                                    <h3 className="text-sm font-semibold text-dark-50 truncate">
                                                         {candidate.first_name} {candidate.last_name}
                                                     </h3>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                    <p className="text-xs text-dark-400 flex items-center gap-1">
                                                         <Mail className="w-3 h-3" />
                                                         {candidate.email}
                                                     </p>
@@ -170,7 +170,7 @@ const CandidatesView = () => {
                                             <div className="flex items-center gap-3 flex-shrink-0">
                                                 {scoreInfo ? (
                                                     <div className="text-right">
-                                                        <p className={`text-lg font-bold ${scoreInfo.color}`}>
+                                                        <p className="text-lg font-bold font-mono text-emerald-400">
                                                             {(score * 100).toFixed(1)}%
                                                         </p>
                                                         <Badge variant={
@@ -192,34 +192,34 @@ const CandidatesView = () => {
                                             <motion.div
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
-                                                className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-700"
+                                                className="mt-4 pt-4 border-t border-white/[0.06]"
                                             >
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     {/* Score Breakdown */}
                                                     {(candidate.semantic_score != null || candidate.keyword_score != null || candidate.context_score != null) && (
                                                         <div>
-                                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Score Breakdown</p>
+                                                            <p className="text-xs font-medium text-dark-400 mb-2">Score Breakdown</p>
                                                             <div className="space-y-1.5">
                                                                 {candidate.semantic_score != null && (
                                                                     <div className="flex justify-between text-sm">
-                                                                        <span className="text-gray-600 dark:text-gray-400">Semantic</span>
-                                                                        <span className="font-medium text-gray-900 dark:text-white">
+                                                                        <span className="text-dark-400">Semantic</span>
+                                                                        <span className="font-medium text-dark-50 font-mono">
                                                                             {(candidate.semantic_score * 100).toFixed(1)}%
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {candidate.keyword_score != null && (
                                                                     <div className="flex justify-between text-sm">
-                                                                        <span className="text-gray-600 dark:text-gray-400">Keyword</span>
-                                                                        <span className="font-medium text-gray-900 dark:text-white">
+                                                                        <span className="text-dark-400">Keyword</span>
+                                                                        <span className="font-medium text-dark-50 font-mono">
                                                                             {(candidate.keyword_score * 100).toFixed(1)}%
                                                                         </span>
                                                                     </div>
                                                                 )}
                                                                 {candidate.context_score != null && (
                                                                     <div className="flex justify-between text-sm">
-                                                                        <span className="text-gray-600 dark:text-gray-400">Context</span>
-                                                                        <span className="font-medium text-gray-900 dark:text-white">
+                                                                        <span className="text-dark-400">Context</span>
+                                                                        <span className="font-medium text-dark-50 font-mono">
                                                                             {(candidate.context_score * 100).toFixed(1)}%
                                                                         </span>
                                                                     </div>
@@ -231,7 +231,7 @@ const CandidatesView = () => {
                                                     {/* Skills */}
                                                     {candidate.parsed_skills && candidate.parsed_skills.length > 0 && (
                                                         <div>
-                                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Skills Found</p>
+                                                            <p className="text-xs font-medium text-dark-400 mb-2">Skills Found</p>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {candidate.parsed_skills.map((skill) => (
                                                                     <Badge key={skill} variant="primary" size="sm">{skill}</Badge>
@@ -243,7 +243,7 @@ const CandidatesView = () => {
                                                     {/* Matched Skills */}
                                                     {candidate.matched_skills && candidate.matched_skills.length > 0 && (
                                                         <div>
-                                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Matched Skills</p>
+                                                            <p className="text-xs font-medium text-dark-400 mb-2">Matched Skills</p>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {candidate.matched_skills.map((skill) => (
                                                                     <Badge key={skill} variant="success" size="sm">{skill}</Badge>
@@ -253,7 +253,7 @@ const CandidatesView = () => {
                                                     )}
                                                 </div>
 
-                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
+                                                <p className="text-xs text-dark-500 mt-3">
                                                     Applied: {formatDate(candidate.applied_at)}
                                                 </p>
                                             </motion.div>
@@ -265,11 +265,11 @@ const CandidatesView = () => {
                     </div>
                 ) : (
                     <Card className="p-12 text-center">
-                        <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <Users className="w-12 h-12 text-dark-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-dark-50 mb-2">
                             No candidates yet
                         </h3>
-                        <p className="text-gray-500 dark:text-gray-400">
+                        <p className="text-dark-400">
                             {candidates.length === 0
                                 ? 'No one has applied to this job yet.'
                                 : 'No candidates match your search.'}

@@ -35,15 +35,15 @@ const Dropdown = ({
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
                     className="flex items-center justify-between w-full px-4 py-2.5 text-left
-            bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-600
-            rounded-lg text-gray-900 dark:text-white
-            hover:border-primary-500 transition-colors"
+            bg-dark-900 border border-white/[0.08]
+            rounded-xl text-dark-50
+            hover:border-primary-500/30 transition-all duration-200"
                 >
-                    <span className={!selectedOption ? 'text-gray-400' : ''}>
+                    <span className={!selectedOption ? 'text-dark-400' : ''}>
                         {selectedOption?.label || placeholder}
                     </span>
                     <ChevronDown className={cn(
-                        'w-4 h-4 transition-transform',
+                        'w-4 h-4 text-dark-400 transition-transform',
                         isOpen && 'rotate-180'
                     )} />
                 </button>
@@ -56,8 +56,8 @@ const Dropdown = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute z-50 w-full mt-1 bg-white dark:bg-dark-800
-              border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg
+                        className="absolute z-50 w-full mt-1 bg-dark-800
+              border border-white/[0.06] rounded-xl shadow-2xl shadow-black/40
               overflow-hidden"
                     >
                         {options.map((option) => (
@@ -70,10 +70,10 @@ const Dropdown = ({
                                 }}
                                 className={cn(
                                     'w-full px-4 py-2.5 text-left text-sm transition-colors',
-                                    'hover:bg-gray-100 dark:hover:bg-dark-700',
+                                    'hover:bg-white/[0.04]',
                                     option.value === value
-                                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                        : 'text-gray-700 dark:text-gray-300'
+                                        ? 'text-primary-400 bg-primary-500/10'
+                                        : 'text-dark-200'
                                 )}
                             >
                                 {option.label}

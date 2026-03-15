@@ -1,12 +1,12 @@
 import cn from '../../utils/cn';
 
 const variantStyles = {
-    success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    danger: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    neutral: 'bg-gray-100 text-gray-800 dark:bg-dark-700 dark:text-gray-300',
-    primary: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400',
+    success: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+    warning: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+    danger: 'bg-red-500/10 text-red-400 border border-red-500/20',
+    info: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    neutral: 'bg-white/[0.04] text-dark-300 border border-white/[0.06]',
+    primary: 'bg-primary-500/10 text-primary-400 border border-primary-500/20',
 };
 
 const sizeStyles = {
@@ -26,7 +26,7 @@ const Badge = ({
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 font-medium rounded-full',
+                'inline-flex items-center gap-1.5 font-medium rounded-full backdrop-blur-sm',
                 variantStyles[variant],
                 sizeStyles[size],
                 className
@@ -36,12 +36,12 @@ const Badge = ({
             {dot && (
                 <span className={cn(
                     'w-1.5 h-1.5 rounded-full',
-                    variant === 'success' && 'bg-green-500',
-                    variant === 'warning' && 'bg-yellow-500',
-                    variant === 'danger' && 'bg-red-500',
-                    variant === 'info' && 'bg-blue-500',
-                    variant === 'neutral' && 'bg-gray-500',
-                    variant === 'primary' && 'bg-primary-500',
+                    variant === 'success' && 'bg-emerald-400',
+                    variant === 'warning' && 'bg-amber-400',
+                    variant === 'danger' && 'bg-red-400',
+                    variant === 'info' && 'bg-blue-400',
+                    variant === 'neutral' && 'bg-dark-400',
+                    variant === 'primary' && 'bg-primary-400',
                 )} />
             )}
             {children}

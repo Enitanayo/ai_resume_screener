@@ -31,8 +31,8 @@ const Sidebar = () => {
         <motion.aside
             animate={{ width: isCollapsed ? 72 : 256 }}
             transition={{ duration: 0.2 }}
-            className="hidden lg:flex flex-col h-[calc(100vh-64px)] sticky top-16
-        bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700"
+            className="hidden lg:flex flex-col h-[calc(100vh-80px)] sticky top-20
+        bg-dark-900 border-r border-white/[0.06]"
         >
             <nav className="flex-1 p-3 space-y-1">
                 {sidebarLinks.map((link) => {
@@ -42,10 +42,10 @@ const Sidebar = () => {
                             key={link.path}
                             to={link.path}
                             className={cn(
-                                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative',
                                 isActive(link.path)
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700'
+                                    ? 'text-primary-400 bg-primary-500/10 sidebar-active-indicator'
+                                    : 'text-dark-400 hover:text-dark-50 hover:bg-white/[0.04]'
                             )}
                         >
                             <Icon className="w-5 h-5 flex-shrink-0" />
@@ -56,12 +56,12 @@ const Sidebar = () => {
             </nav>
 
             {/* Collapse toggle */}
-            <div className="p-3 border-t border-gray-200 dark:border-dark-700">
+            <div className="p-3 border-t border-white/[0.06]">
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="flex items-center justify-center w-full py-2 rounded-lg
-            text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
-            hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                    className="flex items-center justify-center w-full py-2 rounded-xl
+            text-dark-500 hover:text-dark-300
+            hover:bg-white/[0.04] transition-colors"
                 >
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                 </button>

@@ -1,361 +1,463 @@
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { motion, useInView } from 'framer-motion';
+import { useRef, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Sparkles,
-  Zap,
-  Shield,
-  TrendingUp,
-  FileCheck,
-  ArrowRight,
-  CheckCircle,
-  Users,
-  Search,
-  Award
+  ArrowRight, Sparkles, Upload, Brain, BarChart3, Shield, Target,
+  Zap, Users, FileText, TrendingUp, CheckCircle2, Play,
+  ChevronRight, Star, Code2, Cpu, Database, GitBranch
 } from 'lucide-react';
 import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
+
+// Stagger animation variants
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20, filter: 'blur(6px)' },
+  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.8 } },
+};
+
+// Scroll-triggered section wrapper
+const RevealSection = ({ children, className = '' }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-50px' });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+      variants={staggerContainer}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// Typing effect component
+const TypingText = ({ texts }) => {
+  const [currentTextIdx, setCurrentTextIdx] = useState(0);
+  const [displayed, setDisplayed] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentText = texts[currentTextIdx];
+    let timeout;
+    if (!isDeleting) {
+      if (displayed.length < currentText.length) {
+        timeout = setTimeout(() => setDisplayed(currentText.slice(0, displayed.length + 1)), 60);
+      } else {
+        timeout = setTimeout(() => setIsDeleting(true), 2000);
+      }
+    } else {
+      if (displayed.length > 0) {
+        timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 30);
+      } else {
+        setIsDeleting(false);
+        setCurrentTextIdx((prev) => (prev + 1) % texts.length);
+      }
+    }
+    return () => clearTimeout(timeout);
+  }, [displayed, isDeleting, currentTextIdx, texts]);
+
+  return (
+    <span className="font-mono text-sm text-emerald-400">
+      {displayed}<span className="typing-cursor" />
+    </span>
+  );
+};
 
 const Home = () => {
   const navigate = useNavigate();
 
+  const pipelineSteps = [
+    { icon: FileText, label: 'Post Job', desc: 'Recruiter creates job posting with requirements', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { icon: Cpu, label: 'Generate Embedding', desc: 'Job description encoded via sentence-transformers', color: 'text-primary-400', bg: 'bg-primary-500/10' },
+    { icon: Upload, label: 'Upload Resume', desc: 'Candidate uploads resume (PDF/DOCX)', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { icon: Brain, label: 'Gemini Parsing', desc: 'AI extracts structured data from resume', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { icon: Database, label: 'Embed Resume', desc: 'Resume text encoded to embedding space', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+    { icon: Target, label: 'Cosine Similarity', desc: 'Semantic alignment score computed', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { icon: BarChart3, label: 'Ranked Output', desc: 'Candidates ranked by weighted match score', color: 'text-rose-400', bg: 'bg-rose-500/10' },
+  ];
+
   const features = [
-    {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'AI processes resumes in milliseconds, saving you hours of manual screening time.',
-      color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-    },
-    {
-      icon: Shield,
-      title: 'Bias Assessment',
-      description: 'Objective scoring based on skills and experience to reduce unconscious bias.',
-      color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Smart Ranking',
-      description: 'Automatically rank candidates by relevance to your specific job requirements.',
-      color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    },
-    {
-      icon: FileCheck,
-      title: 'Deep Parsing',
-      description: 'Accurately extract skills, experience, and education from any PDF or DOCX.',
-      color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    },
+    { icon: Brain, title: 'Semantic Understanding', desc: 'Goes beyond keywords — understands context, nuance, and transferable skills using sentence-transformer embeddings.' },
+    { icon: Shield, title: 'Bias Reduction', desc: 'Objective scoring based purely on qualifications and skill alignment, not names or demographics.' },
+    { icon: Zap, title: 'Background Processing', desc: 'Redis-powered async processing. Upload and go — your rankings appear within seconds.' },
+    { icon: Code2, title: 'FastAPI Backend', desc: 'Production-grade Python backend with async endpoints, Redis workers, and robust error handling.' },
+    { icon: GitBranch, title: 'Dual Scoring', desc: 'Combined cosine similarity and keyword matching for comprehensive, multi-signal ranking.' },
+    { icon: TrendingUp, title: 'Analytics Dashboard', desc: 'Visual breakdowns of score distributions, skill matches, and hiring pipeline insights.' },
   ];
 
   const stats = [
-    { label: 'Resumes Analyzed', value: '50K+' },
-    { label: 'Hours Saved', value: '10k+' },
-    { label: 'Accuracy', value: '98%' },
-    { label: 'Happy Recruiters', value: '500+' },
+    { value: '94%', label: 'Accuracy Rate', desc: 'in matching quality candidates' },
+    { value: '< 5s', label: 'Processing Time', desc: 'per resume analysis' },
+    { value: '10x', label: 'Faster Screening', desc: 'compared to manual review' },
+    { value: '50+', label: 'Skill Dimensions', desc: 'for semantic matching' },
   ];
 
-  const steps = [
-    {
-      icon: FileCheck,
-      title: 'Post a Job',
-      desc: 'Define your requirements and skills.',
-    },
-    {
-      icon: Users,
-      title: 'Candidates Apply',
-      desc: 'Applicants upload their resumes easily.',
-    },
-    {
-      icon: Search,
-      title: 'AI Screening',
-      desc: 'Our engine parses and scores matches.',
-    },
-    {
-      icon: Award,
-      title: 'Hire the Best',
-      desc: 'Interview, offer, and onboard quickly.',
-    },
+  const testimonials = [
+    { name: 'Sarah Chen', role: 'VP of Engineering, TechFlow', quote: 'Replaced hours of manual resume screening with intelligent, ranked shortlists. Our time-to-hire dropped by 40%.', avatar: 'SC' },
+    { name: 'Marcus Johnson', role: 'Head of Talent, Axion Labs', quote: 'The semantic matching is remarkable. It surfaces candidates we would have overlooked with traditional keyword filters.', avatar: 'MJ' },
+    { name: 'Priya Sharma', role: 'CTO, DataMesh', quote: 'Built for engineers, by people who understand AI. The embedding pipeline is elegant and the results speak for themselves.', avatar: 'PS' },
+  ];
+
+  // Mockup candidate data
+  const mockCandidates = [
+    { name: 'Alex Rivera', score: 0.94, status: 'Embedding Ready', skills: ['Python', 'ML', 'FastAPI'] },
+    { name: 'Jamie Park', score: 0.87, status: 'Parsed', skills: ['React', 'Node', 'TypeScript'] },
+    { name: 'Morgan Liu', score: 0.82, status: 'Scoring', skills: ['PyTorch', 'NLP', 'Redis'] },
   ];
 
   return (
-    <div className="relative overflow-hidden bg-white dark:bg-dark-900 transition-colors duration-300">
+    <div className="overflow-hidden">
 
-      {/* --- HERO SECTION --- */}
-      <section className="relative pt-16 pb-16 sm:pt-20 sm:pb-20 lg:pt-28 lg:pb-28 xl:pt-32 xl:pb-32 overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-          <div className="absolute -top-[20%] -right-[10%] w-[700px] h-[700px] rounded-full bg-primary-100/50 dark:bg-primary-900/10 blur-3xl opacity-60" />
-          <div className="absolute top-[20%] -left-[10%] w-[500px] h-[500px] rounded-full bg-purple-100/50 dark:bg-purple-900/10 blur-3xl opacity-60" />
-          <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] dark:opacity-[0.05]" />
-        </div>
+      {/* ======= HERO SECTION ======= */}
+      <section className="relative min-h-[90vh] flex items-center justify-center py-24 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-primary-500/[0.06] blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/[0.04] blur-[100px] pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 xl:px-12 relative">
-          <div className="grid lg:grid-cols-2 gap-12 sm:gap-16 lg:gap-20 xl:gap-24 items-center">
-
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="text-center lg:text-left space-y-6 sm:space-y-8"
-            >
-              {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-full shadow-sm"
-              >
-                <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Next-Gen Hiring Intelligence
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="grid lg:grid-cols-2 gap-16 items-center"
+          >
+            {/* Left: Copy */}
+            <div className="max-w-2xl">
+              <motion.div variants={fadeUp} className="mb-6">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-sm font-medium">
+                  <Sparkles className="w-4 h-4" /> Powered by AI & Sentence Transformers
                 </span>
               </motion.div>
 
-              {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
-                Hire Smarter, <br className="hidden sm:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-purple-600 dark:from-primary-400 dark:to-purple-400">
-                  Hire Faster.
-                </span>
-              </h1>
+              <motion.h1
+                variants={fadeUp}
+                className="text-5xl sm:text-6xl lg:text-[64px] font-heading font-semibold text-dark-50 leading-[1.1] tracking-[-0.02em] mb-6"
+              >
+                AI-powered resume intelligence for{' '}
+                <span className="text-gradient">modern recruiters</span>
+              </motion.h1>
 
-              {/* Subheadline */}
-              <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Stop drowning in resumes. Our AI assistant analyzes, ranks, and shortlists candidates instantly, so you can focus on the people, not the paper.
-              </p>
+              <motion.p
+                variants={fadeUp}
+                className="text-lg text-dark-300 leading-relaxed mb-8 max-w-xl"
+              >
+                From resume upload to ranked shortlist in seconds. Semantic embeddings, cosine similarity scoring, and Gemini-powered parsing — built on FastAPI and Redis.
+              </motion.p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-4">
                 <Button
-                  onClick={() => navigate('/register')}
-                  size="xl"
-                  variant="primary"
-                  className="w-full sm:w-auto shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30"
+                  size="lg"
                   icon={ArrowRight}
                   iconPosition="right"
+                  onClick={() => navigate('/register')}
+                  className="shadow-xl shadow-indigo-500/20 text-base"
                 >
-                  Get Started for Free
+                  Get Started Free
                 </Button>
                 <Button
-                  onClick={() => navigate('/how-it-works')}
-                  size="xl"
                   variant="outline"
-                  className="w-full sm:w-auto bg-white/50 dark:bg-dark-800/50 backdrop-blur-sm"
+                  size="lg"
+                  icon={Play}
+                  onClick={() => navigate('/about')}
+                  className="text-base"
                 >
-                  How It Works
+                  See How It Works
                 </Button>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-x-8 text-gray-400 dark:text-gray-500 text-sm font-medium">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" /> No credit card required
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" /> 14-day free trial
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right Graphics */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative hidden lg:block"
-            >
-              <div className="relative z-10 bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-700 p-2 transform rotate-1 transition-transform hover:rotate-0 duration-500">
-                <div className="bg-gray-50 dark:bg-dark-900 rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center relative">
-                  {/* Abstract UI Mockup */}
-                  <div className="absolute inset-x-8 top-8 bottom-0 bg-white dark:bg-dark-800 rounded-t-xl shadow-inner border border-gray-200 dark:border-dark-700 p-6 space-y-4">
-                    <div className="flex items-center gap-4 border-b border-gray-100 dark:border-dark-700 pb-4">
-                      <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/50 rounded-full animate-pulse" />
-                      <div className="space-y-2 flex-1">
-                        <div className="h-4 bg-gray-100 dark:bg-dark-700 rounded w-1/3" />
-                        <div className="h-3 bg-gray-50 dark:bg-dark-700 rounded w-1/4" />
-                      </div>
-                      <div className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/30 dark:text-green-400">98% Match</div>
-                    </div>
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 opacity-60">
-                        <div className="w-8 h-8 bg-gray-100 dark:bg-dark-700 rounded-full" />
-                        <div className="flex-1 h-2 bg-gray-100 dark:bg-dark-700 rounded" />
-                        <div className="w-12 h-2 bg-gray-100 dark:bg-dark-700 rounded" />
-                      </div>
-                    ))}
-                  </div>
-                  {/* Floating badge */}
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                    className="absolute bottom-6 right-6 bg-white dark:bg-dark-800 p-4 rounded-xl shadow-xl border border-gray-100 dark:border-dark-700 flex items-center gap-3"
-                  >
-                    <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500">Efficiency Boost</div>
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">+400%</div>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-              {/* Decorative elements */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary-500 to-purple-500 rounded-2xl blur-2xl opacity-20 -z-10" />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- STATS SECTION --- */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gray-50 dark:bg-dark-800/50 border-y border-gray-100 dark:border-dark-800">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 xl:px-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
-            {stats.map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-2 sm:mb-3 tracking-tight">
-                  {stat.value}
-                </div>
-                <div className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  {stat.label}
-                </div>
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* --- FEATURES SECTION --- */}
-      <section className="py-16 sm:py-20 lg:py-28 bg-white dark:bg-dark-900">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 xl:px-12">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-20">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
-              Why Recruiters Love <span className="text-primary-600">Smart Screener</span>
-            </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-              Powerful tools designed to make your hiring process efficient, fair, and effective.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-6">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card
-                  hover
-                  className="h-full border-gray-100 dark:border-dark-700 hover:border-primary-200 dark:hover:border-primary-800/50 transition-colors p-6 sm:p-7 lg:p-8"
-                >
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-5 sm:mb-6 ${feature.color}`}>
-                    <feature.icon className="w-6 h-6 sm:w-7 sm:h-7" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* --- HOW IT WORKS --- */}
-      <section className="py-16 sm:py-20 lg:py-28 bg-gray-50 dark:bg-dark-800 relative overflow-hidden">
-        {/* Decor */}
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-dark-700 to-transparent" />
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 xl:px-12">
-          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
-              Streamlined for Speed
-            </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400">
-              Go from job post to offer letter in record time.
-            </p>
-          </div>
-
-          <div className="relative grid sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-8">
-            {/* Connector Line (Desktop) */}
-            <div className="hidden lg:block absolute top-[2.5rem] left-0 right-0 h-0.5 bg-gray-200 dark:bg-dark-700 -z-10" />
-
-            {steps.map((step, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.2 }}
-                className="text-center group relative"
-              >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-white dark:bg-dark-700 rounded-2xl shadow-lg border border-gray-100 dark:border-dark-600 flex items-center justify-center mb-5 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <step.icon className="w-8 h-8 sm:w-10 sm:h-10 text-primary-600 dark:text-primary-400" />
+              {/* Activity log typing effect */}
+              <motion.div variants={fadeUp} className="mt-10 p-4 rounded-2xl bg-dark-800 border border-white/[0.06]">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-soft" />
+                  <span className="text-xs text-dark-400 font-medium uppercase tracking-wider">Live Pipeline</span>
                 </div>
-                <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 leading-relaxed max-w-xs mx-auto">
-                  {step.desc}
-                </p>
+                <TypingText texts={[
+                  '→ Processing resume_alex_rivera.pdf',
+                  '→ Generating embeddings via sentence-transformers',
+                  '→ Cosine similarity: 0.94 ✓',
+                  '→ Job match: Senior ML Engineer  ●  Ranked #1',
+                  '→ Background worker: embedding pipeline complete',
+                ]} />
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* --- CTA SECTION --- */}
-      <section className="py-16 sm:py-20 lg:py-28 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary-600 dark:bg-primary-900 -z-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-purple-700 dark:from-primary-900 dark:to-dark-950 -z-10" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-
-        <div className="max-w-5xl mx-auto px-6 sm:px-8 lg:px-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="space-y-8 sm:space-y-10"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight">
-              Ready to Hire Your Dream Team?
-            </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-primary-100 max-w-2xl mx-auto leading-relaxed">
-              Join forward-thinking companies that have switched to data-driven, AI-powered recruitment.
-              Start your free trial today.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
-              <Button
-                onClick={() => navigate('/register')}
-                size="xl"
-                className="bg-white text-primary-700 hover:bg-gray-100 border-none shadow-xl w-full sm:w-auto"
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                onClick={() => navigate('/contact')}
-                size="xl"
-                variant="outline"
-                className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto"
-              >
-                Contact Sales
-              </Button>
             </div>
+
+            {/* Right: Glassmorphism Dashboard Mockup */}
+            <motion.div
+              variants={fadeUp}
+              className="hidden lg:block perspective-container"
+            >
+              <div className="relative">
+                {/* Radial glow behind */}
+                <div className="absolute inset-0 radial-glow-indigo scale-110" />
+
+                <motion.div
+                  animate={{ y: [0, -12, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  className="perspective-card"
+                >
+                  <div className="bg-dark-800/90 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 shadow-2xl shadow-black/40">
+                    {/* Mock header */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="flex gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                      </div>
+                      <div className="flex-1 text-center text-xs text-dark-500 font-mono">Candidate Rankings — Senior ML Engineer</div>
+                    </div>
+
+                    {/* Candidate rows */}
+                    <div className="space-y-3">
+                      {mockCandidates.map((c, i) => (
+                        <motion.div
+                          key={c.name}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.8 + i * 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                          className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.05] transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600/80 to-blue-500/80 text-white text-xs font-bold">
+                            #{i + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-dark-50">{c.name}</div>
+                            <div className="flex gap-1.5 mt-1">
+                              {c.skills.map(s => (
+                                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary-500/10 text-primary-400 font-medium">{s}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-mono font-bold text-emerald-400">
+                              {(c.score * 100).toFixed(0)}%
+                            </div>
+                            <div className="text-[10px] text-dark-500">{c.status}</div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Mock status bar */}
+                    <div className="mt-4 flex items-center justify-between pt-4 border-t border-white/[0.04]">
+                      <span className="text-[10px] text-dark-500 font-mono">3 candidates processed</span>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Embedding Ready
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
+      {/* ======= STATS SECTION ======= */}
+      <section className="relative py-20 bg-dark-900">
+        <div className="absolute inset-0 bg-grid-pattern opacity-20" />
+        <RevealSection className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+              <motion.div
+                key={stat.label}
+                variants={fadeUp}
+                className="text-center p-6 rounded-2xl bg-dark-800 border border-white/[0.06]"
+              >
+                <div className="text-3xl sm:text-4xl font-heading font-bold text-dark-50 mb-1 font-mono">{stat.value}</div>
+                <div className="text-sm font-semibold text-primary-400 mb-1">{stat.label}</div>
+                <div className="text-xs text-dark-400">{stat.desc}</div>
+              </motion.div>
+            ))}
+          </div>
+        </RevealSection>
+      </section>
+
+      {/* ======= PIPELINE SECTION ======= */}
+      <section className="py-24 bg-dark-950 relative">
+        <div className="absolute top-0 left-0 right-0 gradient-divider" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RevealSection className="text-center mb-16">
+            <motion.span variants={fadeUp} className="text-sm font-semibold text-primary-400 uppercase tracking-wider">How It Works</motion.span>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-heading font-semibold text-dark-50 mt-3 mb-4">
+              From upload to ranked shortlist
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-dark-300 max-w-2xl mx-auto">
+              Our AI pipeline processes resumes through embedding generation, semantic analysis, and intelligent scoring — all powered by background workers.
+            </motion.p>
+          </RevealSection>
+
+          <RevealSection className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {pipelineSteps.slice(0, 4).map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.div
+                  key={step.label}
+                  variants={fadeUp}
+                  className="relative group"
+                >
+                  <div className="p-6 rounded-2xl bg-dark-800 border border-white/[0.06] h-full transition-all duration-300 hover:border-primary-500/20 hover:shadow-lg hover:shadow-primary-500/5">
+                    <div className={`inline-flex p-3 rounded-xl ${step.bg} mb-4`}>
+                      <Icon className={`w-5 h-5 ${step.color}`} />
+                    </div>
+                    <div className="text-xs font-mono text-dark-500 mb-2">Step {i + 1}</div>
+                    <h3 className="text-base font-semibold text-dark-50 mb-2">{step.label}</h3>
+                    <p className="text-sm text-dark-400 leading-relaxed">{step.desc}</p>
+                  </div>
+                  {i < 3 && (
+                    <div className="hidden lg:block absolute top-1/2 -right-2 text-dark-600">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </RevealSection>
+
+          <RevealSection className="grid sm:grid-cols-3 gap-4 mt-4">
+            {pipelineSteps.slice(4).map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.div
+                  key={step.label}
+                  variants={fadeUp}
+                  className="relative group"
+                >
+                  <div className="p-6 rounded-2xl bg-dark-800 border border-white/[0.06] h-full transition-all duration-300 hover:border-primary-500/20 hover:shadow-lg hover:shadow-primary-500/5">
+                    <div className={`inline-flex p-3 rounded-xl ${step.bg} mb-4`}>
+                      <Icon className={`w-5 h-5 ${step.color}`} />
+                    </div>
+                    <div className="text-xs font-mono text-dark-500 mb-2">Step {i + 5}</div>
+                    <h3 className="text-base font-semibold text-dark-50 mb-2">{step.label}</h3>
+                    <p className="text-sm text-dark-400 leading-relaxed">{step.desc}</p>
+                  </div>
+                  {i < 2 && (
+                    <div className="hidden sm:block absolute top-1/2 -right-2 text-dark-600">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </RevealSection>
+        </div>
+      </section>
+
+      {/* ======= FEATURES SECTION ======= */}
+      <section className="py-24 bg-dark-900 relative">
+        <div className="absolute top-0 left-0 right-0 gradient-divider" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RevealSection className="text-center mb-16">
+            <motion.span variants={fadeUp} className="text-sm font-semibold text-primary-400 uppercase tracking-wider">Features</motion.span>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-heading font-semibold text-dark-50 mt-3 mb-4">
+              Engineered for intelligent hiring
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-dark-300 max-w-2xl mx-auto">
+              Built on a modern stack — FastAPI, Redis, sentence-transformers, and Gemini — to deliver fast, fair, and accurate resume screening.
+            </motion.p>
+          </RevealSection>
+
+          <RevealSection className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={feature.title}
+                  variants={fadeUp}
+                  whileHover={{ y: -4 }}
+                  className="p-6 rounded-2xl bg-dark-800 border border-white/[0.06] transition-all duration-300 cursor-spotlight hover:border-primary-500/15"
+                >
+                  <div className="inline-flex p-3 rounded-xl bg-primary-500/10 mb-4">
+                    <Icon className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-dark-50 mb-2">{feature.title}</h3>
+                  <p className="text-sm text-dark-400 leading-relaxed">{feature.desc}</p>
+                </motion.div>
+              );
+            })}
+          </RevealSection>
+        </div>
+      </section>
+
+      {/* ======= TESTIMONIALS SECTION ======= */}
+      <section className="py-24 bg-dark-950 relative">
+        <div className="absolute top-0 left-0 right-0 gradient-divider" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RevealSection className="text-center mb-16">
+            <motion.span variants={fadeUp} className="text-sm font-semibold text-primary-400 uppercase tracking-wider">Testimonials</motion.span>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-heading font-semibold text-dark-50 mt-3 mb-4">
+              Built for real hiring teams
+            </motion.h2>
+          </RevealSection>
+
+          <RevealSection className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <motion.div
+                key={t.name}
+                variants={fadeUp}
+                className="p-6 rounded-2xl bg-dark-800 border border-white/[0.06]"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-dark-200 text-sm leading-relaxed mb-6 italic">"{t.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-dark-50">{t.name}</div>
+                    <div className="text-xs text-dark-400">{t.role}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </RevealSection>
+        </div>
+      </section>
+
+      {/* ======= CTA SECTION ======= */}
+      <section className="py-24 bg-dark-900 relative">
+        <div className="absolute top-0 left-0 right-0 gradient-divider" />
+        <div className="absolute inset-0 radial-glow-indigo opacity-50" />
+        <RevealSection className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-heading font-semibold text-dark-50 mb-4">
+            Ready to transform your hiring?
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-dark-300 mb-8 max-w-xl mx-auto">
+            Join teams that screen smarter, hire faster, and build stronger teams — powered by AI intelligence and engineered for scale.
+          </motion.p>
+          <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-4">
+            <Button
+              size="lg"
+              icon={ArrowRight}
+              iconPosition="right"
+              onClick={() => navigate('/register')}
+              className="shadow-xl shadow-indigo-500/20 text-base"
+            >
+              Start Screening Today
+            </Button>
+          </motion.div>
+          <motion.p variants={fadeUp} className="mt-6 text-xs text-dark-500">
+            No credit card required. Free to start.
+          </motion.p>
+        </RevealSection>
+      </section>
     </div>
   );
 };

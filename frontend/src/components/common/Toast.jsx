@@ -25,35 +25,35 @@ export const showToast = {
 const toastConfig = {
     success: {
         icon: CheckCircle,
-        bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-        border: 'border-emerald-500/30',
-        iconColor: 'text-emerald-500',
-        textColor: 'text-emerald-700 dark:text-emerald-300',
-        glow: 'shadow-emerald-500/10',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20',
+        iconColor: 'text-emerald-400',
+        textColor: 'text-emerald-300',
+        glow: 'shadow-emerald-500/5',
     },
     error: {
         icon: XCircle,
-        bg: 'bg-red-500/10 dark:bg-red-500/15',
-        border: 'border-red-500/30',
-        iconColor: 'text-red-500',
-        textColor: 'text-red-700 dark:text-red-300',
-        glow: 'shadow-red-500/10',
+        bg: 'bg-red-500/10',
+        border: 'border-red-500/20',
+        iconColor: 'text-red-400',
+        textColor: 'text-red-300',
+        glow: 'shadow-red-500/5',
     },
     info: {
         icon: Info,
-        bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-        border: 'border-blue-500/30',
-        iconColor: 'text-blue-500',
-        textColor: 'text-blue-700 dark:text-blue-300',
-        glow: 'shadow-blue-500/10',
+        bg: 'bg-blue-500/10',
+        border: 'border-blue-500/20',
+        iconColor: 'text-blue-400',
+        textColor: 'text-blue-300',
+        glow: 'shadow-blue-500/5',
     },
     warning: {
         icon: AlertTriangle,
-        bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-        border: 'border-amber-500/30',
-        iconColor: 'text-amber-500',
-        textColor: 'text-amber-700 dark:text-amber-300',
-        glow: 'shadow-amber-500/10',
+        bg: 'bg-amber-500/10',
+        border: 'border-amber-500/20',
+        iconColor: 'text-amber-400',
+        textColor: 'text-amber-300',
+        glow: 'shadow-amber-500/5',
     },
 };
 
@@ -95,6 +95,7 @@ const ToastItem = ({ toast, onRemove }) => {
             className={`
                 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl
                 shadow-2xl ${config.glow} ${config.bg} ${config.border}
+                bg-dark-900/80
                 transition-all duration-400 ease-out
                 ${animationClasses[phase]}
             `}

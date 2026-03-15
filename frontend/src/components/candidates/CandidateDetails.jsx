@@ -1,18 +1,30 @@
-import { motion } from 'framer-motion';
-import { Mail, Clock, Calendar, FileText, X } from 'lucide-react';
-import Card from '../common/Card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Mail, Phone, MapPin, FileText, Copy, CheckCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
-import ScoreBreakdown from './ScoreBreakdown';
-import SkillsMatch from './SkillsMatch';
-import { formatDate, formatExperience } from '../../utils/formatters';
+import { showToast } from '../common/Toast';
 import { getScoreColor } from '../../utils/helpers';
 
-const CandidateDetails = ({ candidate, jobRequirements, onClose, onStatusChange }) => {
+const CandidateDetails = ({ candidate, jobRequirements, onClose }) => {
+    const [showFullResume, setShowFullResume] = useState(false);
+    const [copied, setCopied] = useState(false);
+
     if (!candidate) return null;
 
-    const score = candidate.score_breakdown?.total_score || 0;
-    const { color, label } = getScoreColor(score);
+    const fullName = `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim() || 'Unknown Candidate';
+    const score = candidate.total_weighted_score;
+    const scoreInfo = score != null ? getScoreColor(score) : null;
+
+    const handleCopyResume = () => {
+        const text = candidate.parsed_resume_text || candidate.resume_text || '';
+        if (text) {
+            navigator.clipboard.writeText(text);
+            setCopied(true);
+            showToast.success('Resume text copied!');
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
 
     return (
         <motion.div
@@ -21,78 +33,133 @@ const CandidateDetails = ({ candidate, jobRequirements, onClose, onStatusChange 
             className="space-y-6"
         >
             {/* Header */}
-            <Card className="p-6">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                            <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
-                                {(candidate.email?.[0] || '?').toUpperCase()}
+            <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/20">
+                    {fullName[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-dark-50">{fullName}</h2>
+                    <div className="flex items-center gap-3 text-sm text-dark-400 mt-0.5">
+                        {candidate.email && (
+                            <span className="flex items-center gap-1">
+                                <Mail className="w-3.5 h-3.5" /> {candidate.email}
                             </span>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {candidate.email?.split('@')[0] || 'Candidate'}
-                            </h2>
-                            <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center gap-1">
-                                    <Mail className="w-4 h-4" /> {candidate.email}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4" /> {formatExperience(candidate.experience_years)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="text-center">
-                        <div className={`text-3xl font-bold ${color}`}>
-                            {Math.round(score * 100)}%
-                        </div>
-                        <Badge variant={score >= 0.6 ? 'success' : score >= 0.4 ? 'warning' : 'danger'}>
-                            {label}
-                        </Badge>
+                        )}
                     </div>
                 </div>
 
-                {/* Status Actions */}
-                {onStatusChange && (
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-dark-700">
-                        <Button variant="primary" size="sm" onClick={() => onStatusChange('shortlisted')}>
-                            Shortlist
-                        </Button>
-                        <Button variant="secondary" size="sm" onClick={() => onStatusChange('under_review')}>
-                            Under Review
-                        </Button>
-                        <Button variant="danger" size="sm" onClick={() => onStatusChange('rejected')}>
-                            Reject
-                        </Button>
+                {/* Score display */}
+                {scoreInfo && (
+                    <div className="text-center px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                        <p className="text-2xl font-bold font-mono text-emerald-400">
+                            {(score * 100).toFixed(1)}%
+                        </p>
+                        <Badge variant={
+                            scoreInfo.label === 'Excellent' ? 'success' :
+                                scoreInfo.label === 'Good' ? 'primary' :
+                                    scoreInfo.label === 'Average' ? 'warning' : 'danger'
+                        } size="sm">
+                            {scoreInfo.label}
+                        </Badge>
                     </div>
                 )}
-            </Card>
+            </div>
 
             {/* Score Breakdown */}
-            <ScoreBreakdown scoreBreakdown={candidate.score_breakdown} />
+            {(candidate.semantic_score != null || candidate.keyword_score != null) && (
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                    <h3 className="text-sm font-semibold text-dark-200 mb-3">Score Breakdown</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {candidate.semantic_score != null && (
+                            <ScoreItem label="Semantic" value={candidate.semantic_score} color="bg-primary-500" />
+                        )}
+                        {candidate.keyword_score != null && (
+                            <ScoreItem label="Keyword" value={candidate.keyword_score} color="bg-blue-500" />
+                        )}
+                        {candidate.context_score != null && (
+                            <ScoreItem label="Context" value={candidate.context_score} color="bg-purple-500" />
+                        )}
+                    </div>
+                </div>
+            )}
 
-            {/* Skills Match */}
-            <SkillsMatch
-                matchedSkills={candidate.score_breakdown?.matched_skills || []}
-                requiredSkills={jobRequirements}
-            />
+            {/* Skills */}
+            {candidate.parsed_skills && candidate.parsed_skills.length > 0 && (
+                <div>
+                    <h3 className="text-sm font-semibold text-dark-200 mb-3">Skills</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                        {candidate.parsed_skills.map((skill) => {
+                            const isMatched = candidate.matched_skills?.includes(skill);
+                            return (
+                                <Badge
+                                    key={skill}
+                                    variant={isMatched ? 'success' : 'primary'}
+                                    size="sm"
+                                >
+                                    {isMatched && <CheckCircle className="w-3 h-3" />}
+                                    {skill}
+                                </Badge>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Resume Text */}
-            {candidate.extracted_text && (
-                <Card className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5" /> Extracted Resume
-                    </h3>
-                    <div className="bg-gray-50 dark:bg-dark-900 rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
-                            {candidate.extracted_text}
+            {(candidate.parsed_resume_text || candidate.resume_text) && (
+                <div>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-dark-200 flex items-center gap-2">
+                            <FileText className="w-4 h-4" /> Resume Text
+                        </h3>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={copied ? CheckCircle : Copy}
+                                onClick={handleCopyResume}
+                            >
+                                {copied ? 'Copied' : 'Copy'}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={showFullResume ? ChevronUp : ChevronDown}
+                                onClick={() => setShowFullResume(!showFullResume)}
+                            >
+                                {showFullResume ? 'Collapse' : 'Expand'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className={`p-4 rounded-xl bg-dark-900 border border-white/[0.06] font-mono text-xs text-dark-300 leading-relaxed overflow-auto custom-scrollbar ${showFullResume ? 'max-h-96' : 'max-h-32'} transition-all duration-300`}>
+                        <pre className="whitespace-pre-wrap">
+                            {candidate.parsed_resume_text || candidate.resume_text}
                         </pre>
                     </div>
-                </Card>
+                </div>
             )}
         </motion.div>
+    );
+};
+
+// Score item sub-component
+const ScoreItem = ({ label, value, color }) => {
+    const percentage = (value * 100).toFixed(1);
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-dark-400">{label}</span>
+                <span className="text-xs font-bold font-mono text-dark-50">{percentage}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                <motion.div
+                    className={`h-full rounded-full ${color}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percentage}%` }}
+                    transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                />
+            </div>
+        </div>
     );
 };
 

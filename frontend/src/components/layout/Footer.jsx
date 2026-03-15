@@ -3,28 +3,32 @@ import { Sparkles, Github, Mail } from 'lucide-react';
 
 const Footer = () => {
     return (
-        <footer className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-dark-700">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <footer className="bg-dark-950 border-t border-white/[0.06] relative">
+            {/* Gradient divider */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
                     {/* Brand */}
-                    <div className="space-y-4">
+                    <div className="md:col-span-2 space-y-4">
                         <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-primary-600 rounded-lg">
-                                <Sparkles className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
-                                ResumeAI
+                            <span className="text-xl font-bold text-dark-50 font-heading">
+                                Smart Screener
                             </span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            AI-powered resume screening that helps you find the best candidates faster and more fairly.
+                        <p className="text-sm text-dark-400 leading-relaxed max-w-md">
+                            AI-powered resume intelligence that helps you find the best candidates faster and more fairly.
+                            From resume upload to ranked shortlist in seconds.
+                        </p>
+                        <p className="text-xs text-dark-500 italic">
+                            Built for real hiring teams.
                         </p>
                     </div>
 
                     {/* Links */}
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
-                        <ul className="space-y-2">
+                        <h3 className="text-sm font-semibold text-dark-200 mb-4 uppercase tracking-wider">Quick Links</h3>
+                        <ul className="space-y-3">
                             {[
                                 { path: '/', label: 'Home' },
                                 { path: '/about', label: 'About' },
@@ -34,7 +38,7 @@ const Footer = () => {
                                 <li key={link.path}>
                                     <Link
                                         to={link.path}
-                                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                        className="text-sm text-dark-400 hover:text-primary-400 transition-colors duration-200"
                                     >
                                         {link.label}
                                     </Link>
@@ -45,18 +49,18 @@ const Footer = () => {
 
                     {/* Contact */}
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Contact</h3>
-                        <ul className="space-y-2">
+                        <h3 className="text-sm font-semibold text-dark-200 mb-4 uppercase tracking-wider">Contact</h3>
+                        <ul className="space-y-3">
                             <li>
-                                <a href="mailto:support@resumeai.com"
-                                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                <a href="mailto:support@smartscreener.ai"
+                                    className="flex items-center gap-2 text-sm text-dark-400 hover:text-primary-400 transition-colors duration-200"
                                 >
-                                    <Mail className="w-4 h-4" /> support@resumeai.com
+                                    <Mail className="w-4 h-4" /> support@smartscreener.ai
                                 </a>
                             </li>
                             <li>
                                 <a href="https://github.com" target="_blank" rel="noreferrer"
-                                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                    className="flex items-center gap-2 text-sm text-dark-400 hover:text-primary-400 transition-colors duration-200"
                                 >
                                     <Github className="w-4 h-4" /> GitHub
                                 </a>
@@ -65,10 +69,15 @@ const Footer = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-dark-700 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        &copy; {new Date().getFullYear()} Intelligent Resume Screener. All rights reserved.
-                    </p>
+                <div className="mt-12 pt-8 border-t border-white/[0.06]">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <p className="text-sm text-dark-500">
+                            &copy; {new Date().getFullYear()} Smart Screener. All rights reserved.
+                        </p>
+                        <p className="text-sm text-dark-400 font-medium">
+                            Built for intelligent hiring. <span className="text-primary-400">Available today.</span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </footer>

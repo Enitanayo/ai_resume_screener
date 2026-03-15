@@ -1,81 +1,58 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import useAuthStore from '../../store/authStore';
-import { validateLoginForm } from '../../utils/validators';
 import { showToast } from '../../components/common/Toast';
+import useAuthStore from '../../store/authStore';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [errors, setErrors] = useState({});
-    const { login, isLoading } = useAuthStore();
     const navigate = useNavigate();
+    const { login, isLoading, error } = useAuthStore();
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (errors[e.target.name]) {
+            setErrors({ ...errors, [e.target.name]: '' });
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.email) newErrors.email = 'Email is required';
+        if (!formData.password) newErrors.password = 'Password is required';
+        return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const validation = validateLoginForm(formData);
-        if (!validation.valid) {
-            setErrors(validation.errors);
+        const newErrors = validate();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        // Login via backend JWT auth
-        const result = await login(formData.email, formData.password);
-
-        if (result?.error) {
-            const errorMsg = result.error.toLowerCase();
-            const newErrors = {};
-
-            // Parse error messages and map to fields
-            if (errorMsg.includes('password') || errorMsg.includes('credentials')) {
-                newErrors.password = 'Invalid email or password';
-            }
-            if (errorMsg.includes('email') || errorMsg.includes('user not found')) {
-                newErrors.email = 'Please check your email address'; // Start with email for "not found" to avoid leaking existence, or just stick to generic creds
-                // actually, for "invalid credentials" typically we flag both or just password. 
-                // Let's be specific if the error is specific about format.
-            }
-
-            // "Invalid credentials" usually means the combo is wrong.
-            if (errorMsg.includes('invalid credentials')) {
-                newErrors.password = 'Incorrect email or password';
-                newErrors.email = ' '; // Highlight border only
-            } else if (errorMsg.includes('password')) {
-                // Specific password format error (rare for login, but possible)
-                newErrors.password = 'Invalid password format';
-            } else if (errorMsg.includes('email')) {
-                newErrors.email = 'Invalid email address';
-            } else {
-                // Fallback for unknown errors
-                showToast.error(result.error);
-                return;
-            }
-
-            setErrors(newErrors);
-        } else {
+        try {
+            const user = await login(formData.email, formData.password);
             showToast.success('Welcome back!');
-            if (result.role === 'recruiter' || result.role === 'admin') {
+            if (user?.role === 'recruiter' || user?.role === 'admin') {
                 navigate('/recruiter/dashboard');
             } else {
                 navigate('/candidate/browse');
             }
+        } catch {
+            showToast.error(error || 'Login failed');
         }
     };
 
     return (
-        <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
+        <AuthLayout title="Welcome back" subtitle="Sign in to continue to your dashboard">
             <form onSubmit={handleSubmit} className="space-y-5">
                 <Input
-                    label="Email"
+                    label="Email Address"
                     name="email"
                     type="email"
                     icon={Mail}
@@ -89,33 +66,34 @@ const Login = () => {
                     name="password"
                     type="password"
                     icon={Lock}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleChange}
                     error={errors.password}
                 />
 
-                <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                        <span className="text-gray-600 dark:text-gray-400">Remember me</span>
-                    </label>
-                    <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-500">
-                        Forgot password?
-                    </Link>
-                </div>
+                {error && (
+                    <p className="text-sm text-red-400 bg-red-500/10 px-4 py-2 rounded-xl">{error}</p>
+                )}
 
-                <Button type="submit" variant="primary" size="lg" fullWidth isLoading={isLoading}>
+                <Button
+                    type="submit"
+                    fullWidth
+                    size="lg"
+                    isLoading={isLoading}
+                    icon={ArrowRight}
+                    iconPosition="right"
+                >
                     Sign In
                 </Button>
-
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    Don't have an account?{' '}
-                    <Link to="/register" className="text-primary-600 hover:text-primary-500 font-medium">
-                        Sign up
-                    </Link>
-                </p>
             </form>
+
+            <p className="text-center text-sm text-dark-400 mt-6">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors">
+                    Create one
+                </Link>
+            </p>
         </AuthLayout>
     );
 };

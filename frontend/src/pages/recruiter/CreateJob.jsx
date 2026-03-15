@@ -1,38 +1,43 @@
-import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import { showToast } from '../../components/common/Toast';
+import { Briefcase, ArrowLeft, Save } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import JobForm from '../../components/jobs/JobForm';
-import Button from '../../components/common/Button';
 import { createJob } from '../../services/api';
-import { showToast } from '../../components/common/Toast';
 
 const CreateJob = () => {
-    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = async (formData) => {
-        setIsLoading(true);
-        try {
-            await createJob(formData);
-            showToast.success('Job created successfully!');
-            navigate('/recruiter/jobs');
-        } catch (err) {
-            console.error('Failed to create job:', err);
-        } finally {
-            setIsLoading(false);
-        }
+    const handleCreate = async (data) => {
+        const newJob = await createJob(data);
+        showToast.success('Job created successfully!');
+        navigate(`/recruiter/jobs/${newJob.$id || newJob.id}/candidates`);
     };
 
     return (
         <DashboardLayout>
-            <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate(-1)} className="mb-6">
-                Back
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Job</h1>
-            <JobForm onSubmit={handleSubmit} isLoading={isLoading} submitLabel="Create Job" />
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="max-w-3xl mx-auto space-y-6"
+            >
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate(-1)} />
+                    <div>
+                        <h1 className="text-2xl font-heading font-bold text-dark-50">Create Job</h1>
+                        <p className="text-dark-400 text-sm mt-1">Post a new job opening for candidates</p>
+                    </div>
+                </div>
+
+                <JobForm onSubmit={handleCreate} submitLabel="Create Job" />
+            </motion.div>
         </DashboardLayout>
     );
 };
+
 
 export default CreateJob;
