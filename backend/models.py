@@ -1,6 +1,7 @@
 from __future__ import annotations # we can use the job class before its definition
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Integer, String, Text, DateTime, JSON, Float, UniqueConstraint
+from pgvector.sqlalchemy import Vector 
 
 from datetime import datetime, UTC
 
@@ -31,8 +32,8 @@ class JobPosting(Base):
         index = True
     )
 
-    job_vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
-    skills_vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
+    job_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+    skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
 
     processing_status: Mapped[str] = mapped_column(
         String,
@@ -46,7 +47,7 @@ class JobPosting(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     recruiter: Mapped[Recruiter] = relationship(back_populates="jobs")
-    candidates: Mapped[list[CandidateApplication]] = relationship(back_populates="job")
+    candidates: Mapped[list[CandidateApplication]] = relationship(back_populates="job", cascade="all, delete-orphan")
 
 class CandidateApplication(Base):
     __tablename__ = "candidates_applications"
@@ -63,8 +64,8 @@ class CandidateApplication(Base):
     )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     parsed_skills: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    resume_vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
-    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
+    resume_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
     matched_skills:Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
     semantic_score: Mapped[float | None] = mapped_column(Float, nullable=True)

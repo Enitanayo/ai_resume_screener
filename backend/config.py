@@ -11,6 +11,6 @@ class Settings(BaseSettings):
     redis_url: str
     gemini_api_key: str
     algorithm:str = "HS256"
-    access_token_expires_minutes: int = 30
+    access_token_expires_minutes: int = 45
 
 settings = Settings()

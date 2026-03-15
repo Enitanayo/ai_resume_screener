@@ -12,7 +12,7 @@ from backend.auth import (
     CurrentRecruiter,
 )
 from backend.queue_client import queue
-from backend.worker import process_job, process_application
+# from backend.worker import process_job, process_application
 from backend.config import settings
 from backend.database import get_db
 from backend.schemas import RecruiterCreate, RecruiterResponse, JobPostingCreate, JobPostingResponse, JobPostingUpdate, CandidateApplicationPrivate, CandidateApplicationPublic, Analytics
@@ -34,7 +34,7 @@ def create_job_posting(job:JobPostingCreate, current_recruiter:CurrentRecruiter,
 
     # Get the job posting id and use it to initiate background processing of the job
     job_id = job_posting.id
-    queue.enqueue(process_job, job_id)
+    queue.enqueue("backend.worker.process_job", job_id)
 
     return job_posting
 
@@ -85,13 +85,16 @@ def edit_job_posting(job_id: int, job_posting:JobPostingUpdate, current_recruite
     
     if job_posting.job_description or job_posting.required_skills:
         # if they update description or required skills process the job again and also reprocess all applications
-        queue.enqueue(process_job, job_id)
+        queue.enqueue("backend.worker.process_job", job_id)
         results = db.execute(
             select(models.CandidateApplication).where(models.CandidateApplication.job_id == job_id)
         )
         candidates = results.scalars().all()
-        for candidate in candidates:
-            queue.enqueue(process_application, candidate.id)
+        if candidates:
+            # c_ids = [c.id for c in candidates]
+            # queue.enqueue("backend.worker.process_application_batch", job_id, c_ids)
+            for candidate in candidates:
+                queue.enqueue("backend.worker.process_application", candidate.id)
 
     update_data = job_posting.model_dump(exclude_unset=True)
     for field, value in update_data.items():
