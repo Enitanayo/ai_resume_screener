@@ -47,16 +47,16 @@ const Register = () => {
             return;
         }
 
-        try {
-            await register(formData.name, formData.email, formData.password, formData.role);
+        const result = await register(formData.email, formData.password, formData.name, formData.role);
+        if (result?.success) {
             showToast.success('Account created! Welcome aboard.');
-            if (formData.role === 'recruiter') {
+            if (result.role === 'recruiter' || result.role === 'admin') {
                 navigate('/recruiter/dashboard');
             } else {
                 navigate('/candidate/browse');
             }
-        } catch {
-            showToast.error(error || 'Registration failed');
+        } else {
+            showToast.error(result?.error || error || 'Registration failed');
         }
     };
 

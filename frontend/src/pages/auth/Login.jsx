@@ -35,16 +35,16 @@ const Login = () => {
             return;
         }
 
-        try {
-            const user = await login(formData.email, formData.password);
+        const result = await login(formData.email, formData.password);
+        if (result?.success) {
             showToast.success('Welcome back!');
-            if (user?.role === 'recruiter' || user?.role === 'admin') {
+            if (result.role === 'recruiter' || result.role === 'admin') {
                 navigate('/recruiter/dashboard');
             } else {
                 navigate('/candidate/browse');
             }
-        } catch {
-            showToast.error(error || 'Login failed');
+        } else {
+            showToast.error(result?.error || error || 'Login failed');
         }
     };
 

@@ -9,6 +9,7 @@ import Modal from '../../components/common/Modal';
 import Dropdown from '../../components/common/Dropdown';
 import { showToast } from '../../components/common/Toast';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import Loading from '../../components/common/Loading';
 import { getAllJobs, deleteJob } from '../../services/api';
 
 const JobsManagement = () => {
