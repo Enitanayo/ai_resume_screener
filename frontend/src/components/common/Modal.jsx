@@ -31,7 +31,7 @@ const Modal = ({
         md: 'max-w-lg',
         lg: 'max-w-2xl',
         xl: 'max-w-4xl',
-        full: 'max-w-full mx-4',
+        full: 'max-w-7xl',
     };
 
     return (
@@ -76,7 +76,7 @@ const Modal = ({
                         )}
 
                         {/* Body */}
-                        <div className="px-6 py-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <div className="px-6 py-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
                             {children}
                         </div>
                     </motion.div>

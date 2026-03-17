@@ -230,7 +230,42 @@ export const matchCandidates = async (jobId, candidateIds = null) => {
           keyword_match: c.keyword_score,
           context_score: c.context_score,
         },
+        raw_text: c.raw_text,
+        matched_skills: c.matched_skills,
+        parsed_skills: c.parsed_skills,
       }));
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
+/**
+ * Download the original resume file for a candidate
+ * @param {number} jobId - Job ID
+ * @param {number} candidateId - Candidate ID
+ */
+export const downloadResume = async (jobId, candidateId) => {
+  try {
+    const response = await apiClient.get(
+      `/api/jobs/${jobId}/candidate/${candidateId}/resume`,
+      { responseType: 'blob' }
+    );
+
+    // Extract filename from Content-Disposition header or use default
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'resume';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    // Trigger browser download
+    const url = URL.createObjectURL(response.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   } catch (error) {
     throw handleApiError(error);
   }

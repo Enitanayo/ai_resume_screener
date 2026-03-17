@@ -16,6 +16,7 @@ import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
 import CandidateDetails from '../../components/candidates/CandidateDetails';
+import ResumeBreakdown from '../../components/candidates/ResumeBreakdown';
 import { showToast } from '../../components/common/Toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -64,6 +65,8 @@ const BatchUpload = () => {
     const [rankedResults, setRankedResults] = useState([]);
     const [currentBatchIds, setCurrentBatchIds] = useState([]);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
+    const [breakdownCandidate, setBreakdownCandidate] = useState(null);
+    const [breakdownRank, setBreakdownRank] = useState(null);
 
     const fileInputRef = useRef(null);
 
@@ -227,10 +230,16 @@ const BatchUpload = () => {
         }
     };
 
-    // --- View candidate ---
+    // --- View candidate (existing applicants section) ---
     const handleViewCandidate = (candidateId) => {
         const found = existingCandidates.find(c => (c.$id || c.id) === candidateId);
         if (found) setSelectedCandidate(found);
+    };
+
+    // --- View ranked candidate breakdown ---
+    const handleViewBreakdown = (result, index) => {
+        setBreakdownCandidate(result);
+        setBreakdownRank(index + 1);
     };
 
     // --- Download rankings ---
@@ -559,7 +568,7 @@ const BatchUpload = () => {
                                                                         variant="ghost"
                                                                         size="sm"
                                                                         icon={ChevronRight}
-                                                                        onClick={() => handleViewCandidate(result.candidate_id)}
+                                                                        onClick={() => handleViewBreakdown(result, index)}
                                                                         className="rounded-xl hover:bg-primary-500/10 group-hover:translate-x-1 transition-all"
                                                                     >
                                                                         View
@@ -629,7 +638,7 @@ const BatchUpload = () => {
                     </div>
                 </div>
 
-                {/* Candidate Detail Modal */}
+                {/* Candidate Detail Modal (for existing applicants) */}
                 <Modal
                     isOpen={!!selectedCandidate}
                     onClose={() => setSelectedCandidate(null)}
@@ -640,6 +649,22 @@ const BatchUpload = () => {
                         candidate={selectedCandidate}
                         jobRequirements={selectedJob?.requirements}
                         onClose={() => setSelectedCandidate(null)}
+                    />
+                </Modal>
+
+                {/* Resume Breakdown Modal (for ranked results VIEW button) */}
+                <Modal
+                    isOpen={!!breakdownCandidate}
+                    onClose={() => { setBreakdownCandidate(null); setBreakdownRank(null); }}
+                    title="Score Breakdown & Analysis"
+                    size="full"
+                >
+                    <ResumeBreakdown
+                        candidate={breakdownCandidate}
+                        job={selectedJob}
+                        rank={breakdownRank}
+                        totalCandidates={rankedResults.length}
+                        onClose={() => { setBreakdownCandidate(null); setBreakdownRank(null); }}
                     />
                 </Modal>
             </motion.div>

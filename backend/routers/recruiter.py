@@ -253,3 +253,69 @@ def get_candidate(job_id:int, candidate_id: int, current_recruiter:CurrentRecrui
         )
 
     return candidate
+
+
+@router.get(
+    "/{job_id}/candidate/{candidate_id}/resume",
+    status_code=status.HTTP_200_OK,
+)
+def download_candidate_resume(
+    job_id: int,
+    candidate_id: int,
+    current_recruiter: CurrentRecruiter,
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Download the original resume file for a candidate."""
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+
+    # Authorization: ensure recruiter owns the job
+    job_stmt = (
+        select(models.JobPosting)
+        .where(models.JobPosting.id == job_id)
+        .where(models.JobPosting.recruiter_id == current_recruiter.id)
+    )
+
+    job = db.execute(job_stmt).scalars().first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
+
+    # Fetch candidate
+    stmt = (
+        select(models.CandidateApplication)
+        .where(models.CandidateApplication.id == candidate_id)
+        .where(models.CandidateApplication.job_id == job_id)
+    )
+
+    candidate = db.execute(stmt).scalars().first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found",
+        )
+
+    file_path = Path(candidate.resume_path)
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume file not found on server",
+        )
+
+    # Determine content type
+    suffix = file_path.suffix.lower()
+    media_types = {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".doc": "application/msword",
+    }
+    media_type = media_types.get(suffix, "application/octet-stream")
+    download_name = f"{candidate.first_name}_{candidate.last_name}_resume{suffix}"
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=download_name,
+    )

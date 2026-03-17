@@ -96,6 +96,7 @@ class CandidateApplicationPrivate(CandidateApplicationPublic):
     semantic_score: float | None
     context_score: float | None
     keyword_score: float | None
+    raw_text: str | None
 
 class Token(BaseModel):
     access_token: str
