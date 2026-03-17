@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sparkles, LogOut, LayoutDashboard, Briefcase, User, ChevronDown, BookOpen, Layers, BarChart3 } from 'lucide-react';
 import Button from '../common/Button';
 import useAuthStore from '../../store/authStore';
+import logo from '../../assets/logo.png';
 
 const Navbar = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -66,6 +67,9 @@ const Navbar = () => {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-white p-0.5 shadow-sm shadow-black/5 flex items-center justify-center">
+              <img src={logo} alt="Smart Screener Logo" className="w-full h-full object-contain" />
+            </div>
             <span className="text-xl font-bold text-dark-50 tracking-tight hidden sm:block group-hover:text-primary-400 transition-colors font-heading">
               Smart Screener
             </span>

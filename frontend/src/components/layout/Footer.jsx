@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, Github, Mail } from 'lucide-react';
+import { Github, Mail } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 const Footer = () => {
     return (
@@ -11,7 +12,10 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
                     {/* Brand */}
                     <div className="md:col-span-2 space-y-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white p-0.5 shadow-sm shadow-black/5 flex items-center justify-center">
+                                <img src={logo} alt="Smart Screener Logo" className="w-full h-full object-contain" />
+                            </div>
                             <span className="text-xl font-bold text-dark-50 font-heading">
                                 Smart Screener
                             </span>

@@ -7,6 +7,7 @@ import {
   ChevronRight, Star, Code2, Cpu, Database, GitBranch
 } from 'lucide-react';
 import Button from '../../components/common/Button';
+import logo from '../../assets/logo.png';
 
 // Stagger animation variants
 const staggerContainer = {
@@ -138,7 +139,10 @@ const Home = () => {
             <div className="max-w-2xl">
               <motion.div variants={fadeUp} className="mb-6">
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-sm font-medium">
-                  <Sparkles className="w-4 h-4" /> Powered by AI & Sentence Transformers
+                  <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center">
+                    <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+                  </div>
+                  Powered by AI & Sentence Transformers
                 </span>
               </motion.div>
 

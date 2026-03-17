@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 const AuthLayout = ({ children, title, subtitle }) => {
     return (
@@ -18,8 +18,8 @@ const AuthLayout = ({ children, title, subtitle }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center mb-4">
-                        <div className="p-3 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 shadow-lg shadow-indigo-500/20">
-                            <Sparkles className="w-8 h-8 text-white" />
+                        <div className="p-1 rounded-2xl bg-white shadow-lg shadow-indigo-500/10">
+                            <img src={logo} alt="Smart Screener Logo" className="w-12 h-12 object-contain" />
                         </div>
                     </div>
                     {title && (
