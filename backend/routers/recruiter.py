@@ -91,10 +91,10 @@ def edit_job_posting(job_id: int, job_posting:JobPostingUpdate, current_recruite
         )
         candidates = results.scalars().all()
         if candidates:
-            # c_ids = [c.id for c in candidates]
-            # queue.enqueue("backend.worker.process_application_batch", job_id, c_ids)
-            for candidate in candidates:
-                queue.enqueue("backend.worker.process_application", candidate.id)
+            c_ids = [c.id for c in candidates]
+            queue.enqueue("backend.worker.batch_processing", c_ids)
+            # for candidate in candidates:
+            #     queue.enqueue("backend.worker.process_application", candidate.id)
 
     update_data = job_posting.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -319,3 +319,32 @@ def download_candidate_resume(
         media_type=media_type,
         filename=download_name,
     )
+
+
+@router.post("/batch_processing/{job_id}", status_code = status.HTTP_200_OK)
+def batch_processing(job_id:int, current_recruiter:CurrentRecruiter, db:Annotated[Session, Depends(get_db)]):
+  stmt = (
+        select(models.JobPosting)
+        .where(models.JobPosting.id == job_id)
+        .where(models.JobPosting.recruiter_id == current_recruiter.id)
+    ) # Get Job with job id that was created by this specific recruiter
+
+  result = db.execute(stmt)
+  job = result.scalars().first()
+
+  if not job:
+      raise HTTPException(
+          status_code=status.HTTP_404_NOT_FOUND,
+          detail="Job not found",
+      )
+
+  results = db.execute(
+          select(models.CandidateApplication).where(models.CandidateApplication.job_id == job_id)
+      )
+  candidates = results.scalars().all()
+  if not candidates:
+      return {"message": "No candidates to process", "count": 0}
+
+  c_ids = [c.id for c in candidates]
+  queue.enqueue("backend.worker.batch_processing", c_ids)
+  return {"message": "Batch processing started", "count": len(c_ids), "candidate_ids": c_ids}
