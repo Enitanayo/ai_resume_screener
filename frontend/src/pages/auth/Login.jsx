@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -9,6 +9,7 @@ import useAuthStore from '../../store/authStore';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const { login, isLoading, error } = useAuthStore();
@@ -64,8 +65,10 @@ const Login = () => {
                 <Input
                     label="Password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     icon={Lock}
+                    rightIcon={showPassword ? EyeOff : Eye}
+                    onRightIconClick={() => setShowPassword(!showPassword)}
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleChange}

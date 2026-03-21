@@ -5,6 +5,8 @@ const Input = forwardRef(({
   label,
   error,
   icon: Icon,
+  rightIcon: RightIcon,
+  onRightIconClick,
   type = 'text',
   className,
   containerClassName,
@@ -35,11 +37,22 @@ const Input = forwardRef(({
             error
               ? 'border-red-500/50 focus:ring-red-500/30'
               : 'border-white/[0.08]',
-            Icon ? 'pl-10 pr-4 py-2.5' : 'px-4 py-2.5',
+            Icon ? 'pl-10' : 'pl-4',
+            RightIcon ? 'pr-10' : 'pr-4',
+            'py-2.5',
             className
           )}
           {...props}
         />
+        {RightIcon && (
+          <button
+            type="button"
+            onClick={onRightIconClick}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-400 hover:text-dark-200 transition-colors"
+          >
+            <RightIcon className="h-5 w-5" />
+          </button>
+        )}
       </div>
       {error && (
         <p className="text-sm text-red-400">{error}</p>

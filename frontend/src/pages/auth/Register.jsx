@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Briefcase, UserCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { showToast } from '../../components/common/Toast';
 import useAuthStore from '../../store/authStore';
-import cn from '../../utils/cn';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -14,8 +13,10 @@ const Register = () => {
         email: '',
         password: '',
         confirmPassword: '',
-        role: 'candidate',
+        role: 'recruiter', // Default to recruiter
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const { register, isLoading, error } = useAuthStore();
@@ -60,41 +61,9 @@ const Register = () => {
         }
     };
 
-    const roleOptions = [
-        { value: 'candidate', label: 'Candidate', icon: UserCircle, desc: 'Browse and apply to jobs' },
-        { value: 'recruiter', label: 'Recruiter', icon: Briefcase, desc: 'Post jobs and screen candidates' },
-    ];
-
     return (
         <AuthLayout title="Create your account" subtitle="Start screening smarter in minutes">
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Role Selection */}
-                <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-dark-300">I am a...</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        {roleOptions.map((r) => {
-                            const Icon = r.icon;
-                            return (
-                                <button
-                                    key={r.value}
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, role: r.value })}
-                                    className={cn(
-                                        'flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200',
-                                        formData.role === r.value
-                                            ? 'bg-primary-500/10 border-primary-500/30 text-primary-400'
-                                            : 'bg-dark-900 border-white/[0.06] text-dark-400 hover:border-white/[0.12]'
-                                    )}
-                                >
-                                    <Icon className="w-6 h-6" />
-                                    <span className="text-sm font-semibold">{r.label}</span>
-                                    <span className="text-xs text-dark-500">{r.desc}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
                 <Input
                     label="Full Name"
                     name="name"
@@ -117,8 +86,10 @@ const Register = () => {
                 <Input
                     label="Password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     icon={Lock}
+                    rightIcon={showPassword ? EyeOff : Eye}
+                    onRightIconClick={() => setShowPassword(!showPassword)}
                     placeholder="Min. 8 characters"
                     value={formData.password}
                     onChange={handleChange}
@@ -127,8 +98,10 @@ const Register = () => {
                 <Input
                     label="Confirm Password"
                     name="confirmPassword"
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     icon={Lock}
+                    rightIcon={showConfirmPassword ? EyeOff : Eye}
+                    onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     placeholder="Repeat your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
