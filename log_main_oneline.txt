@@ -1,0 +1,2 @@
+﻿9da9329 Changed from sqlite to postgresql and use pgvector for embeddings; Made some performance related changes; Added batch application processing worker
+bb95393 Initial commit

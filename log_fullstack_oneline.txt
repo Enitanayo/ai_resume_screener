@@ -1,0 +1,10 @@
+﻿b78423c Update frontend layout, auth pages, recruiter dashboard, and add utility test scripts
+6ed243d Merge origin/main into fullstack, resolving conflicts in recruiter.py
+bcdb810 Integrated custom brand logo across Auth, Navbar, Home, and Footer components
+c84b34f Refined Resume Breakdown UI, added AI Semantic Proofs, and updated minimalist grayscale PDF report
+af50f1c added batch processing endpoint and worker
+2c84b33 Update AI Resume Screener: backend adjustments, UI improvements, and utility scripts
+a59d88f Merge main into fullstack - combine backend and frontend
+a580e9c WIP: save current fullstack changes
+9da9329 Changed from sqlite to postgresql and use pgvector for embeddings; Made some performance related changes; Added batch application processing worker
+beeb7b1 Integrated frontend and backend into monorepo structure

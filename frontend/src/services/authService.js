@@ -73,17 +73,31 @@ export const authService = {
     /**
      * Determine role from user data.
      * Since the backend currently only supports recruiter registration,
-     * all authenticated users are recruiters. This can be extended later.
+     * we support a frontend-only role override via localStorage.
      * @param {Object} user - Backend user object
      * @returns {string} Role string
      */
     getUserRole: (user) => {
-        // Backend only has recruiters for now, but we check for a role field
-        // that may be added later
         if (!user) return 'candidate'; // default
         if (user.role) return user.role;
+        
+        // Front-end override: check localStorage for a saved role for this email
+        if (user.email) {
+            const frontendRole = localStorage.getItem(`frontend_role_${user.email}`);
+            if (frontendRole) return frontendRole;
+        }
+        
         // If the user came from /auth/me (recruiter endpoint), they're a recruiter
         return 'recruiter';
+    },
+
+    /**
+     * Save a frontend-only role override to localStorage.
+     * @param {string} email 
+     * @param {string} role 
+     */
+    setFrontendRole: (email, role) => {
+        localStorage.setItem(`frontend_role_${email}`, role);
     },
 
     /**

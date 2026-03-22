@@ -23,6 +23,10 @@ const useAuthStore = create(
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
 
+          // Completely Frontend Role Logic:
+          // Save the role to local storage BEFORE calling login so getUserRole will see it
+          authService.setFrontendRole(email, role);
+
           await authService.register(email, password, firstName, lastName);
 
           // Auto-login after registration

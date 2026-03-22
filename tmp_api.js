@@ -138,48 +138,15 @@ export const updateJob = async (jobId, jobData) => {
  * @param {FormData} formData - Must contain 'resume', 'first_name', 'last_name', 'email'
  * @returns {Promise} Candidate application object
  */
-export const applyToJob = async (jobId, { firstName, lastName, email, resume, jobTitle }) => {
+export const applyToJob = async (jobId, formData) => {
   try {
-    const formData = new FormData();
-    formData.append('first_name', firstName);
-    formData.append('last_name', lastName);
-    formData.append('email', email);
-    formData.append('resume', resume);
-    formData.append('job_title', jobTitle);
     const response = await apiClient.post(`/application/apply/${jobId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-
-    // Frontend Persistence (localStorage backup) for testing phase
-    const application = response.data;
-    const userEmail = useAuthStore.getState().user?.email;
-    if (userEmail) {
-        const storageKey = `candidate_apps_${userEmail}`;
-        const existingApps = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        const newApp = {
-            id: application.id || Date.now(),
-            job_id: jobId,
-            job_title: jobTitle || 'Job Application',
-            applied_at: new Date().toISOString(),
-            processing_status: application.processing_status || 'pending',
-            total_weighted_score: null,
-        };
-        localStorage.setItem(storageKey, JSON.stringify([newApp, ...existingApps]));
-    }
     return response.data;
   } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-export const triggerBatchProcessing = async (jobId) => {
-  try {
-    const response = await apiClient.post(`/api/jobs/batch_processing/${jobId}`);
-    return response.data;
-  } catch (error)
-  {
     throw handleApiError(error);
   }
 };
@@ -309,11 +276,8 @@ export const downloadResume = async (jobId, candidateId) => {
  * Not yet implemented in backend.
  */
 export const getMyApplications = async () => {
-  const userEmail = useAuthStore.getState().user?.email;
-  if (!userEmail) return [];
-  const storageKey = `candidate_apps_${userEmail}`;
-  const apps = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  return apps;
+  console.warn('getMyApplications: endpoint not available in backend');
+  return [];
 };
 
 /**
@@ -343,7 +307,7 @@ export const batchUpload = async (jobId, files) => {
         fd.append('email', `candidate_${Date.now()}_${i}@batch.upload`);
         fd.append('resume', files[i]);
 
-        const response = await apiClient.post(`/application/apply/${jobId}?batch=true`, fd, {
+        const response = await apiClient.post(`/application/apply/${jobId}`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
@@ -360,11 +324,6 @@ export const batchUpload = async (jobId, files) => {
 
     if (errors.length > 0 && successCount === 0) {
       throw new Error(`All uploads failed: ${errors.join('; ')}`);
-    }
-
-    if (successCount > 0) {
-      // Trigger the actual batch processing for the newly uploaded 'pending' candidates
-      await apiClient.post(`/api/jobs/batch_processing/${jobId}`);
     }
 
     return {
@@ -441,26 +400,8 @@ export const getDashboardAnalytics = async () => {
  * Not yet implemented in backend.
  */
 export const getCandidateAnalytics = async () => {
-  const apps = await getMyApplications();
-  if (!apps || apps.length === 0) return null;
-  
-  const status_breakdown = apps.reduce((acc, app) => {
-    const status = app.processing_status || 'pending';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
-
-  return {
-    total_applied: apps.length,
-    total_approved: status_breakdown.ready || 0,
-    total_pending: (status_breakdown.pending || 0) + (status_breakdown.processing || 0),
-    total_rejected: status_breakdown.rejected || 0,
-    last_application_date: apps[0]?.applied_at,
-    status_breakdown: status_breakdown,
-    application_timeline: [
-      { month: new Date().toISOString().slice(0, 7), count: apps.length }
-    ]
-  };
+  console.warn('getCandidateAnalytics: endpoint not available in backend');
+  return null;
 };
 
 /**

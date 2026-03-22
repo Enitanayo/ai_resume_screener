@@ -33,8 +33,8 @@ class JobPosting(Base):
         index = True
     )
 
-    job_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
-    skills_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
+    job_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+    skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
 
     processing_status: Mapped[str] = mapped_column(
         String,
@@ -65,8 +65,8 @@ class CandidateApplication(Base):
     )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     parsed_skills: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    resume_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
-    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
+    resume_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
     matched_skills:Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
     semantic_score: Mapped[float | None] = mapped_column(Float, nullable=True)

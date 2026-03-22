@@ -1,0 +1,30 @@
+﻿commit b78423cd41e04832c42c6a6c7eee3c5395000730
+Author: izzychils <israeliraoya7@gmail.com>
+Date:   Sat Mar 21 17:12:16 2026 +0100
+
+    Update frontend layout, auth pages, recruiter dashboard, and add utility test scripts
+
+commit 6ed243df329e247d262df6366a8d22a45e82435a
+Merge: bcdb810 af50f1c
+Author: izzychils <israeliraoya7@gmail.com>
+Date:   Thu Mar 19 21:57:13 2026 +0100
+
+    Merge origin/main into fullstack, resolving conflicts in recruiter.py
+
+commit bcdb8107d112f7374d3a44bbdeb980b0ee261a87
+Author: izzychils <israeliraoya7@gmail.com>
+Date:   Tue Mar 17 22:02:10 2026 +0100
+
+    Integrated custom brand logo across Auth, Navbar, Home, and Footer components
+
+commit c84b34f1b9bb02f0f8a191bb12cb2779354c683c
+Author: izzychils <israeliraoya7@gmail.com>
+Date:   Tue Mar 17 19:37:02 2026 +0100
+
+    Refined Resume Breakdown UI, added AI Semantic Proofs, and updated minimalist grayscale PDF report
+
+commit af50f1cc72037c690c225dd055f36e3779745542
+Author: Adeola Enitanayo <adeolaenitan98@gmail.com>
+Date:   Mon Mar 16 21:00:43 2026 +0100
+
+    added batch processing endpoint and worker

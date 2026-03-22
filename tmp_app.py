@@ -64,7 +64,6 @@ def apply_for_job(
     last_name: str = Form(...),
     email: str = Form(...),
     resume: UploadFile = File(...),
-    batch: bool = False,
     db: Session = Depends(get_db),
 ):
     # 1. Ensure job exists
@@ -106,8 +105,7 @@ def apply_for_job(
     db.commit()
     db.refresh(candidate)
 
-    # 5. Trigger background processing (later) if not batch
-    if not batch:
-        queue.enqueue("backend.worker.process_application", candidate.id)
+    # 5. Trigger background processing (later)
+    queue.enqueue("backend.worker.process_application", candidate.id)
 
     return candidate

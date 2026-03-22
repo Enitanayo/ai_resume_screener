@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Briefcase, GraduationCap } from 'lucide-react';
+import { motion } from 'framer-motion';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -15,8 +16,8 @@ const Register = () => {
         confirmPassword: '',
         role: 'recruiter', // Default to recruiter
     });
+    // Unified visibility state for both password fields
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const { register, isLoading, error } = useAuthStore();
@@ -26,6 +27,10 @@ const Register = () => {
         if (errors[e.target.name]) {
             setErrors({ ...errors, [e.target.name]: '' });
         }
+    };
+
+    const handleRoleSelect = (selectedRole) => {
+        setFormData({ ...formData, role: selectedRole });
     };
 
     const validate = () => {
@@ -64,6 +69,55 @@ const Register = () => {
     return (
         <AuthLayout title="Create your account" subtitle="Start screening smarter in minutes">
             <form onSubmit={handleSubmit} className="space-y-5">
+                
+                {/* Role Selection UI */}
+                <div>
+                    <label className="block text-sm font-medium text-dark-200 mb-3">
+                        I want to use the platform as a:
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Recruiter Option */}
+                        <div 
+                            onClick={() => handleRoleSelect('recruiter')}
+                            className={`relative p-4 rounded-xl cursor-pointer border-2 transition-all duration-200 flex flex-col items-center text-center gap-2
+                                ${formData.role === 'recruiter' 
+                                    ? 'bg-primary-500/10 border-primary-500 shadow-lg shadow-primary-500/20' 
+                                    : 'bg-dark-800 border-white/[0.06] hover:bg-dark-700 hover:border-white/[0.1]'}`}
+                        >
+                            <div className={`p-3 rounded-full ${formData.role === 'recruiter' ? 'bg-primary-500 text-white' : 'bg-dark-700 text-dark-400'}`}>
+                                <Briefcase className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className={`font-semibold ${formData.role === 'recruiter' ? 'text-primary-400' : 'text-dark-50'}`}>Recruiter</h3>
+                                <p className="text-xs text-dark-400 mt-1">Hire top talent</p>
+                            </div>
+                            {formData.role === 'recruiter' && (
+                                <motion.div layoutId="roleIndicator" className="absolute inset-0 border-2 border-primary-500 rounded-xl" transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
+                            )}
+                        </div>
+
+                        {/* Candidate Option */}
+                        <div 
+                            onClick={() => handleRoleSelect('candidate')}
+                            className={`relative p-4 rounded-xl cursor-pointer border-2 transition-all duration-200 flex flex-col items-center text-center gap-2
+                                ${formData.role === 'candidate' 
+                                    ? 'bg-primary-500/10 border-primary-500 shadow-lg shadow-primary-500/20' 
+                                    : 'bg-dark-800 border-white/[0.06] hover:bg-dark-700 hover:border-white/[0.1]'}`}
+                        >
+                            <div className={`p-3 rounded-full ${formData.role === 'candidate' ? 'bg-primary-500 text-white' : 'bg-dark-700 text-dark-400'}`}>
+                                <GraduationCap className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className={`font-semibold ${formData.role === 'candidate' ? 'text-primary-400' : 'text-dark-50'}`}>Candidate</h3>
+                                <p className="text-xs text-dark-400 mt-1">Find your next job</p>
+                            </div>
+                            {formData.role === 'candidate' && (
+                                <motion.div layoutId="roleIndicator" className="absolute inset-0 border-2 border-primary-500 rounded-xl" transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <Input
                     label="Full Name"
                     name="name"
@@ -98,10 +152,8 @@ const Register = () => {
                 <Input
                     label="Confirm Password"
                     name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showPassword ? 'text' : 'password'}
                     icon={Lock}
-                    rightIcon={showConfirmPassword ? EyeOff : Eye}
-                    onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     placeholder="Repeat your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}

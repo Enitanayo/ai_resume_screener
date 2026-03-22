@@ -1,0 +1,27 @@
+[
+  {
+    "job_title": "Senior Avionics & Maintenance Technician",
+    "job_description": "We are looking for an experienced Aviation Maintenance professional \nspecializing in electronics and electrical systems (Avionics) to join our \ntechnical operations team. You will be responsible for the inspection, \ntroubleshooting, repair, and maintenance of aircraft avionics and \nelectrical systems, as well as simulator equipment.\n\nKey Responsibilities:\n- Perform advanced troubleshooting and repair of aviation electronics \n  and electrical systems.\n- Execute scheduled and unscheduled maintenance on aircraft components \n  in accordance with regulatory standards.\n- Maintain, calibrate, and upgrade flight simulator equipment.\n- Read and interpret complex technical manuals, wiring diagrams, and \n  schematics to perform precise repairs.\n- Document all maintenance activities accurately to ensure compliance \n  with safety and aviation regulations.\n- Provide technical guidance or supervision to junior technicians \n  during complex repair operations.\n\nThe ideal candidate has significant hands-on experience in aviation \nmaintenance, strong analytical skills for electronics troubleshooting, \nand a deep understanding of aviation safety protocols.",
+    "required_skills": [
+      "- Aviation Electronics",
+      "- Avionics",
+      "- Aircraft Maintenance",
+      "- Electrical Troubleshooting",
+      "- Schematics & Wiring Diagrams",
+      "- Technical Manuals",
+      "- Simulator Maintenance",
+      "- FAA Regulations"
+    ],
+    "id": 1,
+    "recruiter_id": 1,
+    "processing_status": "ready",
+    "processing_error": null,
+    "recruiter": {
+      "first_name": "Israel",
+      "last_name": "IRAOYA",
+      "email": "iraoyai1446@student.babcock.edu.ng",
+      "id": 1
+    },
+    "created_at": "2026-03-21T19:42:09.325198"
+  }
+]

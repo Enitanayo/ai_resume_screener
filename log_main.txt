@@ -1,0 +1,11 @@
+﻿commit 9da932994611a67152cc9c48d63e5becba5f92b3
+Author: Adeola Enitanayo <adeolaenitan98@gmail.com>
+Date:   Tue Mar 3 13:20:23 2026 +0100
+
+    Changed from sqlite to postgresql and use pgvector for embeddings; Made some performance related changes; Added batch application processing worker
+
+commit bb953936c8a0c26d1489f238ad6ac8861ed9cc13
+Author: Adeola Enitanayo <adeolaenitan98@gmail.com>
+Date:   Wed Feb 25 19:19:08 2026 +0100
+
+    Initial commit

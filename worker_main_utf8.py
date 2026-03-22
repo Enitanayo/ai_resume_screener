@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+﻿from concurrent.futures import ThreadPoolExecutor
 import json
 import time
 import tempfile
@@ -79,12 +79,17 @@ def process_application(candidate_id: int):
             result = parser.parse(candidate_application.resume_path)
             candidate_application.parsed_skills = result['skills']
             candidate_application.raw_text = result['raw_text']
-            candidate_application.resume_vector = embedding_service.generate_embedding(
-                candidate_application.raw_text
-            )
-            candidate_application.candidate_skills_vector = embedding_service.generate_embedding(
-                " ".join(candidate_application.parsed_skills)
-            )
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                future_resume = executor.submit(
+                    embedding_service.generate_embedding,
+                    candidate_application.raw_text,
+                )
+                future_skills = executor.submit(
+                    embedding_service.generate_embedding,
+                    " ".join(candidate_application.parsed_skills),
+                )
+                candidate_application.resume_vector = future_resume.result()
+                candidate_application.candidate_skills_vector = future_skills.result()
             scores = scorer.calculate_match(
                 job_embedding=candidate_application.job.job_vector,
                 candidate_embedding=candidate_application.resume_vector,
@@ -196,7 +201,6 @@ Resume Text:
                 break
             time.sleep(30)  # worker is blocked here ΓÇö acceptable for a bulk job
 
-        c_map = {c.id: c for c in candidates}
         if status.state.name != "JOB_STATE_SUCCEEDED":
             for cid in ready_ids:
                 c_map[cid].processing_status = "failed"
@@ -219,6 +223,7 @@ Resume Text:
             except Exception:
                 llm_results[cid] = None
 
+        c_map = {c.id: c for c in candidates}
         for cid in ready_ids:
             c = c_map[cid]
             data = llm_results.get(cid)
@@ -235,8 +240,11 @@ Resume Text:
         raw_texts   = [c.raw_text for c in embeddable]
         skill_texts = [" ".join(c.parsed_skills) for c in embeddable]
 
-        resume_vecs = embedding_service.model.encode(raw_texts)
-        skills_vecs = embedding_service.model.encode(skill_texts)
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            f_resume = ex.submit(embedding_service.model.encode, raw_texts)
+            f_skills = ex.submit(embedding_service.model.encode, skill_texts)
+            resume_vecs = f_resume.result()
+            skills_vecs = f_skills.result()
 
         # ΓöÇΓöÇ PHASE 6: Score each candidate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         job = db.get(models.JobPosting, job_id)

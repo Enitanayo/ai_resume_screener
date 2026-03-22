@@ -59,7 +59,7 @@ def process_job(job_id: int):
 
 
 def process_application(candidate_id: int):
-    # Use SessionLocal() directly ΓÇö get_db() is a generator for FastAPI Depends only
+    # Use SessionLocal() directly — get_db() is a generator for FastAPI Depends only
     with SessionLocal() as db:
         result = db.execute(
             select(models.CandidateApplication).where(models.CandidateApplication.id == candidate_id)
@@ -75,16 +75,21 @@ def process_application(candidate_id: int):
         candidate_application.processing_error = None
         db.commit()
 
-        try:  # PARSE RESUME ΓåÆ GET SKILLS & RAW TEXT ΓåÆ GENERATE EMBEDDINGS ΓåÆ SCORE
+        try:  # PARSE RESUME → GET SKILLS & RAW TEXT → GENERATE EMBEDDINGS → SCORE
             result = parser.parse(candidate_application.resume_path)
             candidate_application.parsed_skills = result['skills']
             candidate_application.raw_text = result['raw_text']
-            candidate_application.resume_vector = embedding_service.generate_embedding(
-                candidate_application.raw_text
-            )
-            candidate_application.candidate_skills_vector = embedding_service.generate_embedding(
-                " ".join(candidate_application.parsed_skills)
-            )
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                future_resume = executor.submit(
+                    embedding_service.generate_embedding,
+                    candidate_application.raw_text,
+                )
+                future_skills = executor.submit(
+                    embedding_service.generate_embedding,
+                    " ".join(candidate_application.parsed_skills),
+                )
+                candidate_application.resume_vector = future_resume.result()
+                candidate_application.candidate_skills_vector = future_skills.result()
             scores = scorer.calculate_match(
                 job_embedding=candidate_application.job.job_vector,
                 candidate_embedding=candidate_application.resume_vector,
@@ -133,7 +138,7 @@ def process_application_batch(job_id: int, candidate_ids: list[int]):
             c.processing_error = None
         db.commit()
 
-        # ΓöÇΓöÇ PHASE 1: Extract raw text from files (local, fast) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 1: Extract raw text from files (local, fast) ────────────────
         parsed_texts = {}   # candidate_id -> clean_text
         for c in candidates:
             try:
@@ -148,7 +153,7 @@ def process_application_batch(job_id: int, candidate_ids: list[int]):
         if not ready_ids:
             return
 
-        # ΓöÇΓöÇ PHASE 2: Submit all parse prompts to Gemini Batch API ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 2: Submit all parse prompts to Gemini Batch API ─────────────
         PROMPT_TEMPLATE = """
 You are an expert HR Resume Parser. Return ONLY valid JSON.
 
@@ -189,14 +194,13 @@ Resume Text:
             config={"display_name": f"resume-batch-{job_id}"},
         )
 
-        # ΓöÇΓöÇ PHASE 3: Poll until Gemini is done ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 3: Poll until Gemini is done ───────────────────────────────
         while True:
             status = parser.client.batches.get(name=batch_job.name)
             if status.state.name in ("JOB_STATE_SUCCEEDED", "JOB_STATE_FAILED", "JOB_STATE_CANCELLED"):
                 break
-            time.sleep(30)  # worker is blocked here ΓÇö acceptable for a bulk job
+            time.sleep(30)  # worker is blocked here — acceptable for a bulk job
 
-        c_map = {c.id: c for c in candidates}
         if status.state.name != "JOB_STATE_SUCCEEDED":
             for cid in ready_ids:
                 c_map[cid].processing_status = "failed"
@@ -204,7 +208,7 @@ Resume Text:
             db.commit()
             return
 
-        # ΓöÇΓöÇ PHASE 4: Download + parse results ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 4: Download + parse results ────────────────────────────────
         raw_bytes = parser.client.files.download(file=status.dest.file_name)
         llm_results = {}  # candidate_id -> {"skills": [...], ...}
         for line in raw_bytes.decode("utf-8").splitlines():
@@ -219,6 +223,7 @@ Resume Text:
             except Exception:
                 llm_results[cid] = None
 
+        c_map = {c.id: c for c in candidates}
         for cid in ready_ids:
             c = c_map[cid]
             data = llm_results.get(cid)
@@ -230,15 +235,18 @@ Resume Text:
             c.raw_text = parsed_texts[cid]
         db.commit()
 
-        # ΓöÇΓöÇ PHASE 5: Batch embed (one forward pass per text type) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 5: Batch embed (one forward pass per text type) ─────────────
         embeddable = [c for c in candidates if c.processing_status == "processing"]
         raw_texts   = [c.raw_text for c in embeddable]
         skill_texts = [" ".join(c.parsed_skills) for c in embeddable]
 
-        resume_vecs = embedding_service.model.encode(raw_texts)
-        skills_vecs = embedding_service.model.encode(skill_texts)
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            f_resume = ex.submit(embedding_service.model.encode, raw_texts)
+            f_skills = ex.submit(embedding_service.model.encode, skill_texts)
+            resume_vecs = f_resume.result()
+            skills_vecs = f_skills.result()
 
-        # ΓöÇΓöÇ PHASE 6: Score each candidate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        # ── PHASE 6: Score each candidate ─────────────────────────────────────
         job = db.get(models.JobPosting, job_id)
         for c, rv, sv in zip(embeddable, resume_vecs, skills_vecs):
             try:

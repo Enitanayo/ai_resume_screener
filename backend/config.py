@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     redis_url: str
     gemini_api_key: str
-    embedding_dimension: int = 3072
+    embedding_dimension: int = 384
     algorithm:str = "HS256"
     access_token_expires_minutes: int = 45
 

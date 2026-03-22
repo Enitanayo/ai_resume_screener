@@ -1,0 +1,581 @@
+﻿diff --git a/backend/config.py b/backend/config.py
+index a4dadc3..007807e 100644
+--- a/backend/config.py
++++ b/backend/config.py
+@@ -10,7 +10,6 @@ class Settings(BaseSettings):
+     openai_api_key: str
+     redis_url: str
+     gemini_api_key: str
+-    embedding_dimension: int = 3072
+     algorithm:str = "HS256"
+     access_token_expires_minutes: int = 45
+ 
+diff --git a/backend/main.py b/backend/main.py
+index aefc81e..2029647 100644
+--- a/backend/main.py
++++ b/backend/main.py
+@@ -1,5 +1,4 @@
+ from fastapi import FastAPI
+-from fastapi.middleware.cors import CORSMiddleware
+ 
+ 
+ from backend.database import Base, engine, get_db
+@@ -11,15 +10,6 @@ Base.metadata.create_all(bind=engine)
+ 
+ app = FastAPI()
+ 
+-# CORS middleware ΓÇö allows frontend to call backend across different ports
+-app.add_middleware(
+-    CORSMiddleware,
+-    allow_origins=["*"],  # In production, restrict to your frontend URL
+-    allow_credentials=True,
+-    allow_methods=["*"],
+-    allow_headers=["*"],
+-)
+-
+ app.include_router(auth_routes.router, prefix="/auth", tags=["auth"])
+ app.include_router(recruiter.router, prefix="/api/jobs", tags=["recruiter"])
+ app.include_router(application.router, prefix="/application", tags=["application"])
+diff --git a/backend/models.py b/backend/models.py
+index db42322..6679911 100644
+--- a/backend/models.py
++++ b/backend/models.py
+@@ -6,7 +6,6 @@ from pgvector.sqlalchemy import Vector
+ from datetime import datetime, UTC
+ 
+ from backend.database import Base
+-from backend.config import settings
+ 
+ class Recruiter(Base):
+     __tablename__ = "recruiters"
+@@ -33,8 +32,8 @@ class JobPosting(Base):
+         index = True
+     )
+ 
+-    job_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
+-    skills_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
++    job_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
++    skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+ 
+     processing_status: Mapped[str] = mapped_column(
+         String,
+@@ -65,8 +64,8 @@ class CandidateApplication(Base):
+     )
+     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+     parsed_skills: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+-    resume_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
+-    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
++    resume_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
++    candidate_skills_vector: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+     matched_skills:Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+ 
+     semantic_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+diff --git a/backend/routers/application.py b/backend/routers/application.py
+index 6ae64dc..368a687 100644
+--- a/backend/routers/application.py
++++ b/backend/routers/application.py
+@@ -27,7 +27,7 @@ ALLOWED_RESUME_TYPES = {
+     "application/msword": ".doc",
+ }
+ 
+-RESUME_STORAGE = Path(__file__).resolve().parents[2] / "storage"
++RESUME_STORAGE = Path("C:\\Projects\\resume_screener_v3_frontend\\storage")
+ 
+ def save_resume(file: UploadFile, job_id: int) -> str:
+     if file.content_type not in ALLOWED_RESUME_TYPES:
+diff --git a/backend/routers/recruiter.py b/backend/routers/recruiter.py
+index 76af270..c2cbc37 100644
+--- a/backend/routers/recruiter.py
++++ b/backend/routers/recruiter.py
+@@ -91,10 +91,10 @@ def edit_job_posting(job_id: int, job_posting:JobPostingUpdate, current_recruite
+         )
+         candidates = results.scalars().all()
+         if candidates:
+-            c_ids = [c.id for c in candidates]
+-            queue.enqueue("backend.worker.batch_processing", c_ids)
+-            # for candidate in candidates:
+-            #     queue.enqueue("backend.worker.process_application", candidate.id)
++            # c_ids = [c.id for c in candidates]
++            # queue.enqueue("backend.worker.process_application_batch", job_id, c_ids)
++            for candidate in candidates:
++                queue.enqueue("backend.worker.process_application", candidate.id)
+ 
+     update_data = job_posting.model_dump(exclude_unset=True)
+     for field, value in update_data.items():
+@@ -252,99 +252,4 @@ def get_candidate(job_id:int, candidate_id: int, current_recruiter:CurrentRecrui
+             detail="Candidate not found",
+         )
+ 
+-    return candidate
+-
+-
+-@router.get(
+-    "/{job_id}/candidate/{candidate_id}/resume",
+-    status_code=status.HTTP_200_OK,
+-)
+-def download_candidate_resume(
+-    job_id: int,
+-    candidate_id: int,
+-    current_recruiter: CurrentRecruiter,
+-    db: Annotated[Session, Depends(get_db)],
+-):
+-    """Download the original resume file for a candidate."""
+-    from fastapi.responses import FileResponse
+-    from pathlib import Path
+-
+-    # Authorization: ensure recruiter owns the job
+-    job_stmt = (
+-        select(models.JobPosting)
+-        .where(models.JobPosting.id == job_id)
+-        .where(models.JobPosting.recruiter_id == current_recruiter.id)
+-    )
+-
+-    job = db.execute(job_stmt).scalars().first()
+-    if not job:
+-        raise HTTPException(
+-            status_code=status.HTTP_404_NOT_FOUND,
+-            detail="Job not found",
+-        )
+-
+-    # Fetch candidate
+-    stmt = (
+-        select(models.CandidateApplication)
+-        .where(models.CandidateApplication.id == candidate_id)
+-        .where(models.CandidateApplication.job_id == job_id)
+-    )
+-
+-    candidate = db.execute(stmt).scalars().first()
+-    if not candidate:
+-        raise HTTPException(
+-            status_code=status.HTTP_404_NOT_FOUND,
+-            detail="Candidate not found",
+-        )
+-
+-    file_path = Path(candidate.resume_path)
+-    if not file_path.exists():
+-        raise HTTPException(
+-            status_code=status.HTTP_404_NOT_FOUND,
+-            detail="Resume file not found on server",
+-        )
+-
+-    # Determine content type
+-    suffix = file_path.suffix.lower()
+-    media_types = {
+-        ".pdf": "application/pdf",
+-        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+-        ".doc": "application/msword",
+-    }
+-    media_type = media_types.get(suffix, "application/octet-stream")
+-    download_name = f"{candidate.first_name}_{candidate.last_name}_resume{suffix}"
+-
+-    return FileResponse(
+-        path=str(file_path),
+-        media_type=media_type,
+-        filename=download_name,
+-    )
+-
+-
+-@router.post("/batch_processing/{job_id}", status_code = status.HTTP_200_OK)
+-def batch_processing(job_id:int, current_recruiter:CurrentRecruiter, db:Annotated[Session, Depends(get_db)]):
+-  stmt = (
+-        select(models.JobPosting)
+-        .where(models.JobPosting.id == job_id)
+-        .where(models.JobPosting.recruiter_id == current_recruiter.id)
+-    ) # Get Job with job id that was created by this specific recruiter
+-
+-  result = db.execute(stmt)
+-  job = result.scalars().first()
+-
+-  if not job:
+-      raise HTTPException(
+-          status_code=status.HTTP_404_NOT_FOUND,
+-          detail="Job not found",
+-      )
+-
+-  results = db.execute(
+-          select(models.CandidateApplication).where(models.CandidateApplication.job_id == job_id)
+-      )
+-  candidates = results.scalars().all()
+-  if not candidates:
+-      return {"message": "No candidates to process", "count": 0}
+-
+-  c_ids = [c.id for c in candidates]
+-  queue.enqueue("backend.worker.batch_processing", c_ids)
+-  return {"message": "Batch processing started", "count": len(c_ids), "candidate_ids": c_ids}
++    return candidate
+\ No newline at end of file
+diff --git a/backend/schemas.py b/backend/schemas.py
+index 6cde096..f59ebee 100644
+--- a/backend/schemas.py
++++ b/backend/schemas.py
+@@ -96,7 +96,6 @@ class CandidateApplicationPrivate(CandidateApplicationPublic):
+     semantic_score: float | None
+     context_score: float | None
+     keyword_score: float | None
+-    raw_text: str | None
+ 
+ class Token(BaseModel):
+     access_token: str
+diff --git a/backend/services/embedding.py b/backend/services/embedding.py
+index 59f35fb..b04a577 100644
+--- a/backend/services/embedding.py
++++ b/backend/services/embedding.py
+@@ -10,26 +10,12 @@ class EmbeddingService:
+     def __init__(self):
+         self.provider = settings.embedding_provider
+         self.model = None
+-        self.gemini_client = None
+         
+         if self.provider == "openai" and settings.openai_api_key:
+             openai.api_key = settings.openai_api_key
+-        elif self.provider == "gemini" and settings.gemini_api_key:
+-            try:
+-                from google import genai
+-                self.gemini_client = genai.Client(api_key=settings.gemini_api_key)
+-                print("Successfully initialized Gemini embedding client.")
+-            except ImportError:
+-                print("Warning: google-genai not installed.")
+-            except Exception as e:
+-                print(f"Warning: Failed to initialize Gemini client: {e}")
+         else:
+-            try:
+-                from sentence_transformers import SentenceTransformer
+-                self.model = SentenceTransformer('all-MiniLM-L6-v2')
+-                print("Successfully loaded SentenceTransformer model.")
+-            except Exception as e:
+-                print(f"Warning: Failed to load local embedding model: {e}")
++            from sentence_transformers import SentenceTransformer
++            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+ 
+     def generate_embedding(self, text: str) -> List[float]:
+         if not text:
+@@ -43,28 +29,18 @@ class EmbeddingService:
+                     model="text-embedding-ada-002",
+                 )["data"][0]["embedding"]
+ 
+-            if self.provider == "gemini" and self.gemini_client:
+-                result = self.gemini_client.models.embed_content(
+-                    model="models/gemini-embedding-001",
+-                    contents=text
+-                )
+-                return result.embeddings[0].values
+-
+             if self.model:
+                 embedding = self.model.encode(text)
+                 return embedding.tolist()
+ 
+-            raise EmbeddingError(f"No embedding provider configured or model failed to load. Provider: {self.provider}")
++            raise EmbeddingError("No embedding provider configured")
+ 
+         except Exception as exc:
+-            print(f"CRITICAL EMBEDDING ERROR: {exc}")
+-            raise EmbeddingError(f"Could not generate embedding: {str(exc)}") from exc
++            raise EmbeddingError("Could not generate embedding") from exc
+ 
+     def get_dimension(self) -> int:
+         if self.provider == "openai" and settings.openai_api_key:
+             return 1536
+-        if self.provider == "gemini":
+-            return 3072
+         return 384
+ 
+-embedding_service = EmbeddingService()
+\ No newline at end of file
++embedding_service = EmbeddingService()
+diff --git a/backend/worker.py b/backend/worker.py
+index c5670cc..9143df3 100644
+--- a/backend/worker.py
++++ b/backend/worker.py
+@@ -1,13 +1,15 @@
+ from concurrent.futures import ThreadPoolExecutor
+-import traceback
++import json
++import time
++import tempfile
+ 
++from backend.config import settings
+ from backend.database import SessionLocal
+ from backend.services.embedding import embedding_service, EmbeddingError
+ from backend.services.parser import parser, ParserError
+ from backend.services.scorer import scorer, ScoringError
+-from sqlalchemy import select, update
++from sqlalchemy import select
+ from backend import models
+-from sqlalchemy.orm import joinedload
+ 
+ 
+ def process_job(job_id: int):
+@@ -33,6 +35,7 @@ def process_job(job_id: int):
+                 raise EmbeddingError("job_description is empty")
+             job_posting.job_vector = embedding_service.generate_embedding(job_posting.job_description)
+         except EmbeddingError as exc:
++            import traceback
+             errors.append(f"job_vector failed: {exc} | {traceback.format_exc()}")
+ 
+         # --- Step 2: embed required skills ---
+@@ -43,6 +46,7 @@ def process_job(job_id: int):
+             skills_text = ", ".join(skills)
+             job_posting.skills_vector = embedding_service.generate_embedding(skills_text)
+         except EmbeddingError as exc:
++            import traceback
+             errors.append(f"skills_vector failed: {exc} | {traceback.format_exc()}")
+ 
+         if errors:
+@@ -102,128 +106,169 @@ def process_application(candidate_id: int):
+             candidate_application.total_weighted_score = scores['total_score']
+             candidate_application.processing_status = "ready"
+         except ParserError as exc:
++            import traceback
+             candidate_application.processing_status = "failed"
+             candidate_application.processing_error = f"ParserError: {exc} | {traceback.format_exc()}"
+         except EmbeddingError as exc:
++            import traceback
+             candidate_application.processing_status = "failed"
+             candidate_application.processing_error = f"EmbeddingError: {exc} | {traceback.format_exc()}"
+         except ScoringError as exc:
++            import traceback
+             candidate_application.processing_status = "failed"
+             candidate_application.processing_error = f"ScoringError: {exc} | {traceback.format_exc()}"
+         except Exception as exc:
++            import traceback
+             candidate_application.processing_status = "failed"
+             candidate_application.processing_error = f"UnexpectedError: {exc} | {traceback.format_exc()}"
+         finally:
+             db.commit()
+ 
++# worker.py
+ 
+-def batch_processing(candidate_ids: list[int]):
+-    """
+-    Process multiple candidate applications concurrently.
+-
+-    Speed gains:
+-      - parser.parse() calls (Gemini LLM) run in parallel via ThreadPoolExecutor
+-      - Embeddings are batch-encoded in two model.encode() calls
+-      - Single DB commit at the end
+-    Errors are isolated per-candidate so one failure doesn't kill the batch.
+-    """
++def process_application_batch(job_id: int, candidate_ids: list[int]):
+     with SessionLocal() as db:
+-        # ΓöÇΓöÇ 1. Fetch all candidates + their parent job in one query ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        apps = db.execute(
++        candidates = db.execute(
+             select(models.CandidateApplication)
+-            .options(joinedload(models.CandidateApplication.job))
+             .where(models.CandidateApplication.id.in_(candidate_ids))
+-        ).unique().scalars().all()
+-
+-        if not apps:
+-            return
++        ).scalars().all()
+ 
+-        # Mark all as processing in one UPDATE statement
+-        db.execute(
+-            update(models.CandidateApplication)
+-            .where(models.CandidateApplication.id.in_(candidate_ids))
+-            .values(processing_status="processing", processing_error=None)
+-        )
++        for c in candidates:
++            c.processing_status = "processing"
++            c.processing_error = None
+         db.commit()
+ 
+-        # ΓöÇΓöÇ 2. Parse resumes concurrently (the main speedup) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        # parser.parse() is I/O-bound (Gemini API call), so threads work great.
+-        # With max_workers=5, 10 resumes ~10s instead of ~50s sequentially.
+-        def _safe_parse(app):
+-            """Parse one resume, returning (candidate_id, result_dict) or (candidate_id, Exception)."""
++        # ΓöÇΓöÇ PHASE 1: Extract raw text from files (local, fast) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        parsed_texts = {}   # candidate_id -> clean_text
++        for c in candidates:
+             try:
+-                result = parser.parse(app.resume_path)
+-                return (app.id, result)
++                raw = parser._extract_text(c.resume_path)
++                parsed_texts[c.id] = parser._clean_text(raw)
+             except Exception as exc:
+-                return (app.id, exc)
+-
+-        with ThreadPoolExecutor(max_workers=5) as executor:
+-            parse_outcomes = list(executor.map(_safe_parse, apps))
+-
+-        # Separate successes from failures
+-        app_map = {a.id: a for a in apps}
+-        parsed_apps = []  # apps that parsed successfully
+-        for cid, outcome in parse_outcomes:
+-            app = app_map[cid]
+-            if isinstance(outcome, Exception):
+-                app.processing_status = "failed"
+-                app.processing_error = f"ParserError: {outcome}"
+-            else:
+-                app.parsed_skills = outcome.get("skills", [])
+-                app.raw_text = outcome.get("raw_text", "")
+-                parsed_apps.append(app)
++                c.processing_status = "failed"
++                c.processing_error = str(exc)
+         db.commit()
+ 
+-        if not parsed_apps:
++        ready_ids = list(parsed_texts.keys())
++        if not ready_ids:
+             return
+ 
+-        # ΓöÇΓöÇ 3. Batch embed (two model.encode() calls for all candidates) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        raw_texts = [a.raw_text for a in parsed_apps]
+-        skill_texts = [" ".join(a.parsed_skills or []) for a in parsed_apps]
++        # ΓöÇΓöÇ PHASE 2: Submit all parse prompts to Gemini Batch API ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        PROMPT_TEMPLATE = """
++You are an expert HR Resume Parser. Return ONLY valid JSON.
+ 
+-        try:
+-            with ThreadPoolExecutor(max_workers=2) as executor:
+-                future_resume_vecs = executor.submit(
+-                    embedding_service.model.encode, raw_texts
+-                )
+-                future_skills_vecs = executor.submit(
+-                    embedding_service.model.encode, skill_texts
+-                )
+-                resume_vecs = future_resume_vecs.result()
+-                skills_vecs = future_skills_vecs.result()
+-        except Exception as exc:
+-            # If embedding fails entirely, mark all remaining as failed
+-            for app in parsed_apps:
+-                app.processing_status = "failed"
+-                app.processing_error = f"EmbeddingError: {exc}"
++Required keys:
++- skills: list[str]
++- experience_years: float
++- education: list[str]
++
++Resume Text:
++{text}
++"""
++        requests_data = [
++            {
++                "key": str(cid),
++                "request": {
++                    "contents": [{"parts": [{"text": PROMPT_TEMPLATE.format(text=parsed_texts[cid][:15000])}]}],
++                    "generationConfig": {"response_mime_type": "application/json"},
++                },
++            }
++            for cid in ready_ids
++        ]
++
++        # Write JSONL to a temp file and upload
++        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as f:
++            for req in requests_data:
++                f.write(json.dumps(req) + "\n")
++            jsonl_path = f.name
++
++        uploaded = parser.client.files.upload(
++            file=jsonl_path,
++            config={"display_name": f"batch-parse-job-{job_id}",
++                    "mime_type": "application/jsonl"},
++        )
++
++        batch_job = parser.client.batches.create(
++            model="gemini-2.5-flash",
++            src=uploaded.name,
++            config={"display_name": f"resume-batch-{job_id}"},
++        )
++
++        # ΓöÇΓöÇ PHASE 3: Poll until Gemini is done ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        while True:
++            status = parser.client.batches.get(name=batch_job.name)
++            if status.state.name in ("JOB_STATE_SUCCEEDED", "JOB_STATE_FAILED", "JOB_STATE_CANCELLED"):
++                break
++            time.sleep(30)  # worker is blocked here ΓÇö acceptable for a bulk job
++
++        if status.state.name != "JOB_STATE_SUCCEEDED":
++            for cid in ready_ids:
++                c_map[cid].processing_status = "failed"
++                c_map[cid].processing_error = f"Gemini batch failed: {status.error}"
+             db.commit()
+             return
+ 
+-        # ΓöÇΓöÇ 4. Score each candidate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        for app, rv, sv in zip(parsed_apps, resume_vecs, skills_vecs):
++        # ΓöÇΓöÇ PHASE 4: Download + parse results ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        raw_bytes = parser.client.files.download(file=status.dest.file_name)
++        llm_results = {}  # candidate_id -> {"skills": [...], ...}
++        for line in raw_bytes.decode("utf-8").splitlines():
++            if not line:
++                continue
++            row = json.loads(line)
++            cid = int(row["key"])
+             try:
+-                app.resume_vector = rv.tolist()
+-                app.candidate_skills_vector = sv.tolist()
++                # response text is nested inside the Gemini response structure
++                text = row["response"]["candidates"][0]["content"]["parts"][0]["text"]
++                llm_results[cid] = json.loads(text)
++            except Exception:
++                llm_results[cid] = None
++
++        c_map = {c.id: c for c in candidates}
++        for cid in ready_ids:
++            c = c_map[cid]
++            data = llm_results.get(cid)
++            if not data or not isinstance(data, dict):
++                c.processing_status = "failed"
++                c.processing_error = "LLM returned invalid data"
++                continue
++            c.parsed_skills = data.get("skills", [])
++            c.raw_text = parsed_texts[cid]
++        db.commit()
++
++        # ΓöÇΓöÇ PHASE 5: Batch embed (one forward pass per text type) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        embeddable = [c for c in candidates if c.processing_status == "processing"]
++        raw_texts   = [c.raw_text for c in embeddable]
++        skill_texts = [" ".join(c.parsed_skills) for c in embeddable]
++
++        with ThreadPoolExecutor(max_workers=2) as ex:
++            f_resume = ex.submit(embedding_service.model.encode, raw_texts)
++            f_skills = ex.submit(embedding_service.model.encode, skill_texts)
++            resume_vecs = f_resume.result()
++            skills_vecs = f_skills.result()
+ 
+-                job = app.job  # already eager-loaded
++        # ΓöÇΓöÇ PHASE 6: Score each candidate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        job = db.get(models.JobPosting, job_id)
++        for c, rv, sv in zip(embeddable, resume_vecs, skills_vecs):
++            try:
++                c.resume_vector = rv.tolist()
++                c.candidate_skills_vector = sv.tolist()
+                 scores = scorer.calculate_match(
+                     job_embedding=job.job_vector,
+-                    candidate_embedding=app.resume_vector,
++                    candidate_embedding=c.resume_vector,
+                     job_requirements_embedding=job.skills_vector,
+-                    candidate_skills_embedding=app.candidate_skills_vector,
++                    candidate_skills_embedding=c.candidate_skills_vector,
+                     job_skills=job.required_skills,
+-                    candidate_text=app.raw_text,
+-                    candidate_skills=app.parsed_skills,
++                    candidate_text=c.raw_text,
++                    candidate_skills=c.parsed_skills,
+                 )
+-                app.matched_skills = scores["matched_skills"]
+-                app.context_score = scores["context_score"]
+-                app.semantic_score = scores["skills_semantic_score"]
+-                app.keyword_score = scores["keyword_score"]
+-                app.total_weighted_score = scores["total_score"]
+-                app.processing_status = "ready"
+-            except (ScoringError, Exception) as exc:
+-                app.processing_status = "failed"
+-                app.processing_error = f"ScoringError: {exc}"
+-
+-        # ΓöÇΓöÇ 5. Single final commit ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-        db.commit()
+\ No newline at end of file
++                c.matched_skills  = scores["matched_skills"]
++                c.context_score   = scores["context_score"]
++                c.semantic_score  = scores["skills_semantic_score"]
++                c.keyword_score   = scores["keyword_score"]
++                c.total_weighted_score = scores["total_score"]
++                c.processing_status = "ready"
++            except ScoringError as exc:
++                c.processing_status = "failed"
++                c.processing_error = str(exc)
++
++        db.commit()

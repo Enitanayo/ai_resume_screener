@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload, FileText, CheckCircle, AlertCircle, X, Trophy, Medal, Award,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
     getAllJobs, batchUpload, analyseResumes, matchCandidates,
-    getCandidatesByJob, getBatchStatus
+    getCandidatesByJob, getBatchStatus, triggerBatchProcessing
 } from '../../services/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/common/Card';
@@ -15,6 +15,7 @@ import Dropdown from '../../components/common/Dropdown';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
+import Toggle from '../../components/common/Toggle';
 import CandidateDetails from '../../components/candidates/CandidateDetails';
 import ResumeBreakdown from '../../components/candidates/ResumeBreakdown';
 import { showToast } from '../../components/common/Toast';
@@ -60,10 +61,12 @@ const BatchUpload = () => {
     const [stage, setStage] = useState(STAGES.IDLE);
     const [progress, setProgress] = useState({ total: 0, processed: 0 });
     const pollingRef = useRef(null);
+    const listPollingRef = useRef(null);
 
     // Results
     const [rankedResults, setRankedResults] = useState([]);
     const [currentBatchIds, setCurrentBatchIds] = useState([]);
+    const [includeApplied, setIncludeApplied] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
     const [breakdownCandidate, setBreakdownCandidate] = useState(null);
     const [breakdownRank, setBreakdownRank] = useState(null);
@@ -97,21 +100,30 @@ const BatchUpload = () => {
         }
         const job = jobs.find(j => (j.$id || j.id) === selectedJobId);
         setSelectedJob(job);
+        
+        if (listPollingRef.current) clearInterval(listPollingRef.current);
 
-        const fetchCandidates = async () => {
-            setIsLoadingCandidates(true);
+        const fetchCandidates = async (showLoading = true) => {
+            if (showLoading) setIsLoadingCandidates(true);
             try {
                 const data = await getCandidatesByJob(selectedJobId);
                 setExistingCandidates(data || []);
             } catch (err) {
                 console.error('Failed to load existing candidates:', err);
-                setExistingCandidates([]);
             } finally {
-                setIsLoadingCandidates(false);
+                if (showLoading) setIsLoadingCandidates(false);
             }
         };
+
         fetchCandidates();
-    }, [selectedJobId, jobs]);
+        
+        // Poll for new applications every 15 seconds
+        listPollingRef.current = setInterval(() => {
+            if (stage === STAGES.IDLE) fetchCandidates(false);
+        }, 15000);
+
+        return () => { if (listPollingRef.current) clearInterval(listPollingRef.current); };
+    }, [selectedJobId, jobs, stage]);
 
     // --- File handling ---
     const handleFileSelect = (e) => addFiles(Array.from(e.target.files));
@@ -138,34 +150,72 @@ const BatchUpload = () => {
     // --- Full pipeline: Upload → Wait for processing → Show results ---
     const runFullPipeline = async () => {
         if (!selectedJobId) { showToast.error('Please select a job'); return; }
-        if (files.length === 0) {
-            showToast.error('Please select files to upload');
+        if (files.length === 0 && !includeApplied) {
+            showToast.error('Please select files to upload or enable "Include Applied Candidates"');
             return;
         }
 
         // Reset state for new run
         setRankedResults([]);
-        setCurrentBatchIds([]);
+        const allTargetCandidateIds = [];
+        let totalToProcess = 0;
 
         try {
-            // Step 1: Upload files
             setStage(STAGES.UPLOADING);
-            const uploadResult = await batchUpload(selectedJobId, files);
-            const uploadedCount = uploadResult.count || files.length;
-            const newCandidateIds = uploadResult.candidate_ids || [];
 
-            setCurrentBatchIds(newCandidateIds);
-            showToast.success(`Uploaded ${uploadedCount} resume(s)`);
-            setFiles([]);
+            // Step 1a: Upload new files if any
+            if (files.length > 0) {
+                const uploadResult = await batchUpload(selectedJobId, files);
+                const newIds = uploadResult.candidate_ids || [];
+                allTargetCandidateIds.push(...newIds);
+                totalToProcess += newIds.length;
+                showToast.success(`Uploaded ${newIds.length} new resume(s)`);
+                setFiles([]);
+            }
+            // Step 1b: Include ONLY true form applicants if toggled
+            if (includeApplied) {
+                try {
+                    // Filter for candidates who applied via form (not @batch.upload placeholders)
+                    const trueApplicants = existingCandidates.filter(c => 
+                        c.email && !c.email.endsWith('@batch.upload')
+                    );
+                    
+                    const existingIds = trueApplicants.map(c => c.id);
+                    existingIds.forEach(id => {
+                        if (!allTargetCandidateIds.includes(id)) {
+                            allTargetCandidateIds.push(id);
+                        }
+                    });
 
+                    // Trigger backend processing for any pending ones
+                    await triggerBatchProcessing(selectedJobId);
+                    
+                    totalToProcess = allTargetCandidateIds.length;
+                } catch (err) {
+                    console.error('Trigger batch failed:', err);
+                    if (files.length === 0) throw err;
+                }
+            } else {
+                totalToProcess = allTargetCandidateIds.length;
+            }
+
+            if (allTargetCandidateIds.length === 0) {
+                showToast.error('No candidates to process');
+                setStage(STAGES.IDLE);
+                return;
+            }
+
+            setCurrentBatchIds(allTargetCandidateIds);
             // Step 2: Wait for backend to process
             setStage(STAGES.ANALYSING);
-            setProgress({ total: uploadedCount, processed: 0 });
-            await pollForResults(newCandidateIds, uploadedCount);
+            setProgress({ total: totalToProcess, processed: 0 });
+
+            // We start at 0 even if some are ready, then the first poll will update it
+            await pollForResults(allTargetCandidateIds, totalToProcess);
 
             // Step 3: Get ranked results
             setStage(STAGES.MATCHING);
-            await runMatch(newCandidateIds);
+            await runMatch(allTargetCandidateIds);
 
         } catch (err) {
             showToast.error(err.message || 'Pipeline failed');
@@ -177,7 +227,7 @@ const BatchUpload = () => {
     const pollForResults = (newCandidateIds, uploadedCount) => {
         return new Promise((resolve) => {
             const startTime = Date.now();
-            const MAX_POLL_TIME = 300000; // 5 minutes
+            const MAX_POLL_TIME = 900000; // 15 minutes
             const expectedIds = new Set(newCandidateIds.map(String));
 
             const poll = async () => {
@@ -209,8 +259,12 @@ const BatchUpload = () => {
                 }
             };
 
-            pollingRef.current = setInterval(poll, 4000);
-            setTimeout(poll, 2000); //snappier first check
+            // Delay the first update significantly to ensure the user sees 0/X
+            setTimeout(() => {
+                if (pollingRef.current) clearInterval(pollingRef.current);
+                pollingRef.current = setInterval(poll, 4000);
+                poll();
+            }, 3000); // 3 second delay to keep 0/X visible
         });
     };
 
@@ -306,12 +360,29 @@ const BatchUpload = () => {
     };
 
     // --- Derived data ---
-    const jobOptions = jobs.map(j => ({ value: j.$id || j.id, label: j.job_title || j.title }));
-    const pendingCount = existingCandidates.filter(c =>
-        c.processing_status === 'pending' || c.processing_status === 'processing' || c.processing_status === 'failed'
-    ).length;
-    const processedCount = existingCandidates.filter(c => c.processing_status === 'ready').length;
-    const isProcessing = stage !== STAGES.IDLE && stage !== STAGES.DONE;
+    const jobOptions = useMemo(() => 
+        jobs.map(j => ({ value: j.$id || j.id, label: j.job_title || j.title })),
+    [jobs]);
+
+    const appliedCandidates = useMemo(() => 
+        existingCandidates.filter(c => c.email && !c.email.endsWith('@batch.upload')),
+    [existingCandidates]);
+
+    const appliedCount = appliedCandidates.length;
+
+    const processedCount = useMemo(() => 
+        existingCandidates.filter(c => c.processing_status === 'ready').length,
+    [existingCandidates]);
+
+    const pendingCount = useMemo(() => 
+        existingCandidates.filter(c => 
+            c.processing_status === 'pending' || c.processing_status === 'processing'
+        ).length,
+    [existingCandidates]);
+
+    const isProcessing = useMemo(() => 
+        stage !== STAGES.IDLE && stage !== STAGES.DONE,
+    [stage]);
 
     if (isLoadingJobs) return <DashboardLayout><Loading text="Loading jobs..." /></DashboardLayout>;
 
@@ -353,23 +424,42 @@ const BatchUpload = () => {
                                     <p className="text-sm text-dark-400">No applicants yet for this job</p>
                                 ) : (
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-dark-400">Total</span>
-                                            <span className="font-medium text-dark-50 font-mono">{existingCandidates.length}</span>
+                                        <div className="flex items-center justify-between text-sm py-1 border-b border-white/5">
+                                            <span className="text-dark-300 font-medium">Applied (via Form)</span>
+                                            <span className="font-bold text-primary-400 font-mono">{appliedCount}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-emerald-400">Analysed</span>
-                                            <span className="font-medium font-mono">{processedCount}</span>
+                                            <span className="text-emerald-400">Total Analysed Resumes</span>
+                                            <span className="font-medium font-mono">
+                                                {existingCandidates.filter(c => c.processing_status === 'ready').length}
+                                            </span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-amber-400">Pending</span>
-                                            <span className="font-medium font-mono">{pendingCount}</span>
+                                            <span className="font-medium font-mono">
+                                                {existingCandidates.filter(c => c.processing_status === 'pending').length}
+                                            </span>
                                         </div>
-                                        <p className="text-xs text-dark-500 mt-2">
-                                            Previous uploads are stored securely but are excluded from the current ranking display.
-                                        </p>
+                                        <div className="pt-2 mt-2 border-t border-white/10">
+                                            <p className="text-[12px] text-dark-300 leading-tight">
+                                                All {existingCandidates.length} documents are stored securely for this job.
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
+                            </Card>
+                        )}
+
+                        {/* Toggle for existing candidates */}
+                        {selectedJobId && (
+                            <Card className="p-1">
+                                <Toggle
+                                    enabled={includeApplied}
+                                    onChange={setIncludeApplied}
+                                    label="Include Applied Candidates"
+                                    description="Analyze resumes from candidates who applied to this job"
+                                    icon={Users}
+                                />
                             </Card>
                         )}
 
@@ -433,16 +523,18 @@ const BatchUpload = () => {
                             icon={isProcessing ? Loader2 : Upload}
                             onClick={runFullPipeline}
                             isLoading={isProcessing}
-                            disabled={!selectedJobId || isProcessing}
+                            disabled={!selectedJobId || isProcessing || (files.length === 0 && (!includeApplied || (pendingCount === 0 && processedCount === 0)))}
                         >
                             {stage === STAGES.UPLOADING ? 'Uploading...'
                                 : stage === STAGES.ANALYSING ? 'Analysing...'
                                     : stage === STAGES.MATCHING ? 'Ranking...'
-                                        : files.length > 0
-                                            ? `Upload & Rank ${files.length} Resume(s)`
-                                            : pendingCount > 0
-                                                ? `Analyse & Rank ${pendingCount} Resume(s)`
-                                                : 'Upload & Rank Resumes'}
+                                        : (() => {
+                                            const totalBatchCount = files.length + (includeApplied ? appliedCount : 0);
+                                            if (totalBatchCount === 0) return 'Upload & Rank Resumes';
+                                            const label = files.length > 0 ? 'Upload & Rank' : 'Analyse & Rank';
+                                            const unit = totalBatchCount === 1 ? (files.length > 0 ? 'Resume' : 'Applicant') : (files.length > 0 ? 'Resumes' : 'Applicants');
+                                            return `${label} ${totalBatchCount} ${unit}`;
+                                        })()}
                         </Button>
 
                         {/* Pipeline progress */}

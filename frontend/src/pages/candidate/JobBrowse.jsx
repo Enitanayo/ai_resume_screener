@@ -20,12 +20,12 @@ const JobBrowse = () => {
         const fetchJobs = async () => {
             try {
                 const data = await getAllJobs();
-                // Only show jobs that are ready
-                const readyJobs = data.filter((j) => j.processing_status === 'ready');
-                setJobs(readyJobs);
-                setFilteredJobs(readyJobs);
+                console.log("Jobs received in frontend:", data);
+                // Show all jobs during testing phase
+                setJobs(data || []);
+                setFilteredJobs(data || []);
             } catch (err) {
-                console.error(err);
+                console.error("Error fetching jobs:", err);
             } finally {
                 setIsLoading(false);
             }
