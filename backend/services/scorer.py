@@ -22,7 +22,7 @@ class ScoringService:
         except Exception as exc:
             raise ScoringError("Candidate scoring failed") from exc
 
-        final_score = (skills_score * 0.6 + context_score * 0.2 + keyword_score * 0.2)
+        final_score = (skills_score * 0.33 + context_score * 0.33 + keyword_score * 0.33)
 
         return {
             "total_score": round(final_score, 4),
@@ -48,7 +48,7 @@ class ScoringService:
             raise ScoringError(f"{label} embedding dimension mismatch: {a.shape} vs {b.shape}")
 
         score_matrix = cos_sim(a, b)
-        print(f"Score matrix is {score_matrix}")
+        # print(f"Score matrix is {score_matrix}")
 
         try:
             score = float(score_matrix[0][0])

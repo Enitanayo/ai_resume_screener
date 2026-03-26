@@ -89,13 +89,22 @@ class ResumeParser:
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
     def _extract_with_gemini(self, text: str) -> Dict[str, Any]:
         prompt = f"""
-        You are an expert HR Resume Parser.
-        Return ONLY valid JSON.
-
+        You are an expert HR Resume Parser. Extract structured data from the resume below.
+        Return ONLY valid JSON
         Required keys:
+        - name: str (full name of the candidate, or "Unknown" if not found)
+        - email: str or null (email address if present in resume, null if not found)
+        - phone: str or null (phone number if present in resume, null if not found)
         - skills: list[str]
         - experience_years: float
         - education: list[str]
+        
+        IMPORTANT RULES for the "skills" field:
+        - Use lowercase canonical names (e.g. "python", "react", "node.js", "postgresql")
+        - Do NOT include versioning (e.g. "python" not "python 3.11")
+        - SORT the skills list alphabetically
+        - Only include technical skills, tools, frameworks, and programming languages also include Soft skills, Core competencies where applicable
+        - Be exhaustive — include every skill mentioned in the resume
 
         Resume Text:
         {text[:15000]}
@@ -105,7 +114,9 @@ class ResumeParser:
             model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                response_mime_type="application/json"
+                response_mime_type="application/json",
+                temperature = 0.0,
+                seed = 67
             ),
         )
 

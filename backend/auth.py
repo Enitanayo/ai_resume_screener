@@ -41,8 +41,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
-def verify_access_token(token: str) -> str | None:
-    """Verify a JWT access token and return the subject (user id) if valid."""
+def verify_access_token(token: str) -> dict | None:
+    """Verify a JWT access token and return the payload if valid."""
     try:
         payload = jwt.decode(
             token,
@@ -53,19 +53,28 @@ def verify_access_token(token: str) -> str | None:
     except jwt.InvalidTokenError:
         return None
     else:
-        return payload.get("sub")
+        return payload
     
 def get_current_recruiter(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ):
     """Get the currently authenticated recruiter."""
-    recruiter_id = verify_access_token(token)
-    if recruiter_id is None:
+    payload = verify_access_token(token)
+    if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    recruiter_id = payload.get("sub")
+    role = payload.get("role")
+    
+    if not recruiter_id or role != "recruiter":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
         )
 
     # Validate recruiter_id is a valid integer (defense against malformed JWT)
@@ -91,3 +100,48 @@ def get_current_recruiter(
     return user
 
 CurrentRecruiter = Annotated[models.Recruiter, Depends(get_current_recruiter)]
+
+def get_current_candidate(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Get the currently authenticated candidate."""
+    payload = verify_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    candidate_id = payload.get("sub")
+    role = payload.get("role")
+    
+    if not candidate_id or role != "candidate":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    try:
+        candidate_id_int = int(candidate_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    result = db.execute(
+        select(models.Candidate).where(models.Candidate.id == candidate_id_int),
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+CurrentCandidate = Annotated[models.Candidate, Depends(get_current_candidate)]

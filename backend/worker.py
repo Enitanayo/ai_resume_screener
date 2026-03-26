@@ -75,6 +75,11 @@ def process_application(candidate_id: int):
             result = parser.parse(candidate_application.resume_path)
             candidate_application.parsed_skills = result['skills']
             candidate_application.raw_text = result['raw_text']
+            # Store extracted contact info (from LLM) for batch uploads
+            if not candidate_application.applicant_name and result.get('name'):
+                candidate_application.applicant_name = result['name']
+            if not candidate_application.applicant_email and result.get('email'):
+                candidate_application.applicant_email = result['email']
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future_resume = executor.submit(
                     embedding_service.generate_embedding,
@@ -171,6 +176,11 @@ def batch_processing(candidate_ids: list[int]):
             else:
                 app.parsed_skills = outcome.get("skills", [])
                 app.raw_text = outcome.get("raw_text", "")
+                # Store extracted contact info for batch uploads
+                if not app.applicant_name and outcome.get("name"):
+                    app.applicant_name = outcome["name"]
+                if not app.applicant_email and outcome.get("email"):
+                    app.applicant_email = outcome["email"]
                 parsed_apps.append(app)
         db.commit()
 

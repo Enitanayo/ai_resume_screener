@@ -18,6 +18,17 @@ class Recruiter(Base):
 
     jobs: Mapped[list[JobPosting]] = relationship(back_populates="recruiter", cascade="all, delete-orphan")
 
+class Candidate(Base):
+    __tablename__ = "candidates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    first_name:Mapped[str] = mapped_column(String, nullable=False)
+    last_name:Mapped[str] = mapped_column(String, nullable=False)
+    email:Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+    applications: Mapped[list["CandidateApplication"]] = relationship(back_populates="candidate", cascade="all, delete-orphan")
 
 class JobPosting(Base):
     __tablename__ = "job_postings"
@@ -53,9 +64,16 @@ class CandidateApplication(Base):
     __tablename__ = "candidates_applications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    first_name:Mapped[str] = mapped_column(String, nullable=False)
-    last_name:Mapped[str] = mapped_column(String, nullable=False)
-    email:Mapped[str] = mapped_column(String, nullable=False)
+    candidate_id: Mapped[int | None] = mapped_column(
+        ForeignKey("candidates.id"),
+        nullable=True,   # NULL for batch-uploaded resumes
+        index=True
+    )
+    source: Mapped[str] = mapped_column(
+        String, nullable=False, default="self_applied"
+    )  # "self_applied" | "batch_upload"
+    applicant_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    applicant_email: Mapped[str | None] = mapped_column(String, nullable=True)
     resume_path: Mapped[str] = mapped_column(String, nullable=False) # Change to Text Column later?
     job_id: Mapped[int] = mapped_column(
         ForeignKey("job_postings.id"),
@@ -86,5 +104,6 @@ class CandidateApplication(Base):
     #TODO add property for resume path?
 
     job: Mapped[JobPosting] = relationship(back_populates="candidates")
+    candidate: Mapped[Candidate | None] = relationship(back_populates="applications")
 
-    __table_args__ = (UniqueConstraint("job_id", "email", name="_job_email_uc"),) # Enforcing one application per email per job )
+    __table_args__ = (UniqueConstraint("job_id", "candidate_id", name="_job_candidate_uc"),) # Enforcing one application per candidate per job )

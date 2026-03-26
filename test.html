@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Batch Upload with Auth</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 500px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        .section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        input { display: block; margin: 10px 0; width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        #status { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Job Portal Upload</h2>
+
+    <div class="section" id="loginSection">
+        <h3>1. Login</h3>
+        <input type="text" id="username" placeholder="Username" value="johndoe">
+        <input type="password" id="password" placeholder="Password" value="secret123">
+        <button onclick="handleLogin()">Login</button>
+    </div>
+
+    <div class="section">
+        <h3>2. Upload Resumes</h3>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="resumes" multiple>
+            <button type="submit">Upload to Job #1</button>
+        </form>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    const API_BASE = "http://127.0.0.1:8000";
+    const statusDiv = document.getElementById('status');
+
+    // --- LOGIN LOGIC ---
+    async function handleLogin() {
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+
+        try {
+            // FastAPI OAuth2 usually expects form-data for login
+            const formData = new URLSearchParams();
+            formData.append('username', user);
+            formData.append('password', pass);
+
+            const response = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Login failed');
+
+            const data = await response.json();
+            // Save token to browser storage
+            localStorage.setItem('access_token', data.access_token);
+            
+            statusDiv.innerText = "✅ Logged in successfully!";
+            statusDiv.style.color = "green";
+        } catch (err) {
+            statusDiv.innerText = "❌ Error: " + err.message;
+            statusDiv.style.color = "red";
+        }
+    }
+
+    // --- UPLOAD LOGIC ---
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            alert("Please login first to get a token!");
+            return;
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+            alert("Please select at least one file.");
+            return;
+        }
+
+        // Prepare Multipart Data
+        const formData = new FormData();
+        for (const file of fileInput.files) {
+            formData.append('resumes', file);
+        }
+
+        try {
+            statusDiv.innerText = "Uploading...";
+            
+            const response = await fetch(`${API_BASE}/api/jobs/1/batch-upload`, {
+                method: 'POST',
+                headers: {
+                    // This is the critical authentication header
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (response.status === 401) {
+                throw new Error("Unauthorized: Token might be expired.");
+            }
+
+            const result = await response.json();
+            statusDiv.innerText = "✅ Upload Success: " + JSON.stringify(result);
+            statusDiv.style.color = "green";
+        } catch (err) {
+            statusDiv.innerText = "❌ Upload Failed: " + err.message;
+            statusDiv.style.color = "red";
+        }
+    });
+</script>
+
+</body>
+</html>

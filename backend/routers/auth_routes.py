@@ -17,11 +17,11 @@ from backend.auth import (
 )
 from backend.config import settings
 from backend.database import get_db
-from backend.schemas import RecruiterCreate, RecruiterResponse, Token
+from backend.schemas import RecruiterCreate, RecruiterResponse, Token, CandidateCreate, CandidateResponse
 
 router = APIRouter()
 
-@router.post("/register", response_model=RecruiterResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register/recruiter", response_model=RecruiterResponse, status_code=status.HTTP_201_CREATED)
 def register_recruiter(recruiter:RecruiterCreate, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(
         select(models.Recruiter).where(
@@ -47,35 +47,68 @@ def register_recruiter(recruiter:RecruiterCreate, db: Annotated[Session, Depends
     db.refresh(new_recruiter)
     return new_recruiter
 
+@router.post("/register/candidate", response_model=CandidateResponse, status_code=status.HTTP_201_CREATED)
+def register_candidate(candidate: CandidateCreate, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        select(models.Candidate).where(
+            func.lower(models.Candidate.email) == candidate.email.lower(),
+        ),
+    )
+    existing_user = result.scalars().first()
 
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists",
+        )
+
+    new_candidate = models.Candidate(
+        first_name = candidate.first_name,
+        last_name = candidate.last_name,
+        email=candidate.email.lower(),
+        password_hash=hash_password(candidate.password),
+    )
+    db.add(new_candidate)
+    db.commit()
+    db.refresh(new_candidate)
+    return new_candidate
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ):
-    # Look up recruiter by email (case-insensitive)
-    # Note: OAuth2PasswordRequestForm uses "username" field, but we treat it as email
+    # Look up recruiter by email
     result = db.execute(
         select(models.Recruiter).where(
             func.lower(models.Recruiter.email) == form_data.username.lower(),
         ),
     )
-    recruiter = result.scalars().first()
+    user = result.scalars().first()
+    role = "recruiter"
 
-    # Verify recruiter exists and password is correct
-    # Don't reveal which one failed (security best practice)
-    if not recruiter or not verify_password(form_data.password, recruiter.password_hash):
+    if not user:
+        # Look up candidate by email
+        result = db.execute(
+            select(models.Candidate).where(
+                func.lower(models.Candidate.email) == form_data.username.lower(),
+            ),
+        )
+        user = result.scalars().first()
+        role = "candidate"
+
+    # Verify user exists and password is correct
+    if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Create access token with recruiter id as subject
+    # Create access token with user id as subject
     access_token_expires = timedelta(minutes=settings.access_token_expires_minutes)
     access_token = create_access_token(
-        data={"sub": str(recruiter.id)},
+        data={"sub": str(user.id), "role": role},
         expires_delta=access_token_expires,
     )
     return Token(access_token=access_token, token_type="bearer")

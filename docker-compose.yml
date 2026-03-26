@@ -1,19 +1,21 @@
 services:
   redis:
     image: redis:latest
+    container_name: resume_screener_backend_redis
     ports:
       - "6379:6379"
 
   postgres:
     image: pgvector/pgvector:pg16
+    container_name: resume_screener_backend_postgres
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: fastapi_database
+      POSTGRES_DB: resume_screener_backend_database
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - resume_screener_backend_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  resume_screener_backend_postgres_data:

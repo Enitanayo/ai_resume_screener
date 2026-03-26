@@ -25,6 +25,18 @@ class RecruiterPublic(BaseModel):
 class RecruiterPrivate(RecruiterPublic):
     pass
 
+class CandidateBase(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+
+class CandidateCreate(CandidateBase):
+    password: str = Field(min_length=8)
+
+class CandidateResponse(CandidateBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: datetime
 
 class JobPostingBase(BaseModel):
     job_title:str
@@ -53,9 +65,7 @@ class JobPostingUpdate(BaseModel):
 
 class CandidateApplicationBase(BaseModel):
     job_id: int
-    first_name: str
-    last_name: str
-    email: EmailStr
+    candidate_id: int | None = None
     resume_path: str
 
 class CandidateApplicationCreate(CandidateApplicationBase):
@@ -78,9 +88,11 @@ class CandidateApplicationPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    first_name: str
-    last_name: str
-    email: EmailStr
+    candidate_id: int | None = None
+    candidate: CandidateResponse | None = None
+    source: str = "self_applied"
+    applicant_name: str | None = None
+    applicant_email: str | None = None
     resume_path: str
     processing_status: str
     parsed_skills: list[str] | None
@@ -105,3 +117,28 @@ class Analytics(BaseModel):
     total_applicants: int
     average_score: float
     top_skills: list[str]
+
+class BatchUploadFileResult(BaseModel):
+    filename: str
+    status: str  # "created" | "invalid_type" | "error"
+    application_id: int | None = None
+    detail: str | None = None
+
+class BatchUploadResponse(BaseModel):
+    message: str
+    total_files: int
+    created: int
+    failed: int
+    results: list[BatchUploadFileResult]
+
+class DashboardAnalytics(BaseModel):
+    total_jobs: int
+    total_candidates: int
+    processing_candidates: int
+    ready_candidates: int
+    average_candidate_score: float
+
+class CandidateAnalytics(BaseModel):
+    total_applications: int
+    pending_applications: int
+    scored_applications: int
